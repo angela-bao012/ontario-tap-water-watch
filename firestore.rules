@@ -1,0 +1,47 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Shared validation helpers
+    function isValidLocation(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200;
+    }
+    
+    function isValidWaterTest(data) {
+      return data.locationId is string && data.contaminant is string && data.level is number;
+    }
+    
+    function isValidMineral(data) {
+      return data.name is string && data.description is string;
+    }
+
+    // Locations collection
+    match /locations/{locationId} {
+      allow get: if true;
+      allow list: if true; // Public searchable collection
+      allow write: if false; // System-managed
+    }
+
+    // Water Tests
+    match /waterTests/{testId} {
+      allow get: if true;
+      allow list: if true; // Public searchable
+      allow write: if false; // System-managed
+    }
+
+    // Minerals (Educational)
+    match /minerals/{mineralId} {
+      allow get: if true;
+      allow list: if true;
+      allow write: if false; // System-managed
+    }
+  }
+}

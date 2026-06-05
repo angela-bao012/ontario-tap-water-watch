@@ -1,0 +1,6 @@
+{
+  "name": "Ontario Tap Water Watch",
+  "description": "A comprehensive guide to water quality in Ontario. Search your location to see tap water test results and learn about water minerals and types.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

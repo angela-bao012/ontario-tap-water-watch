@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+import os
+import psycopg2
+import json
+import re
+
+# Database connection URL
+DB_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:68391975@localhost:5432/water_watch")
+
+def clean_name(name):
+    if not name:
+        return ""
+    # Convert to lowercase and replace punctuation with spaces
+    s = name.lower()
+    s = re.sub(r'[^\w\s]', ' ', s)
+    # Collapse whitespace
+    s = ' '.join(s.split())
+    
+    stop_words = [
+        'drinking', 'water', 'system', 'supply', 'well', 'facility', 'distribution', 'ds', 
+        'town', 'city', 'of', 'regional', 'municipality', 'board', 'public', 'school', 'board',
+        'elementary', 'high', 'hs', 'es', 'catholic', 'community', 'living', 'subdivision'
+    ]
+    
+    # Strip exact words out entirely using word-boundary regex
+    for word in stop_words:
+        pattern = r'\b' + re.escape(word) + r'\b'
+        s = re.sub(pattern, ' ', s)
+        
+    # Collapse whitespace again and strip
+    s = ' '.join(s.split()).strip()
+    return s
+
+def run_matching():
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+    
+    # 1. Alter table to ensure dwsp_data JSONB column exists
+    print("Ensuring 'dwsp_data' JSONB column exists in 'water_quality_data'...")
+    cur.execute("ALTER TABLE water_quality_data ADD COLUMN IF NOT EXISTS dwsp_data JSONB;")
+    conn.commit()
+    
+    # 2. Reset all existing dwsp_data to NULL to ensure clean run
+    print("Resetting all 'dwsp_data' entries to NULL...")
+    cur.execute("UPDATE water_quality_data SET dwsp_data = NULL WHERE dwsp_data IS NOT NULL;")
+    conn.commit()
+    
+    # 3. Query raw_dwsp_data averages grouped by dws_name
+    print("Calculating averages grouped by 'dws_name' from 'raw_dwsp_data'...")
+    cur.execute("""
+        SELECT 
+            dws_name,
+            AVG(CASE WHEN parameter_name = 'HARDNESS' THEN result_value END) as hardness_avg,
+            AVG(CASE WHEN parameter_name = 'IRON' THEN result_value END) as iron_avg,
+            AVG(CASE WHEN parameter_name = 'PH' THEN result_value END) as ph_avg
+        FROM raw_dwsp_data
+        GROUP BY dws_name;
+    """)
+    dws_averages = []
+    for row in cur.fetchall():
+        dws_name, hardness, iron, ph = row
+        dws_averages.append({
+            "dws_name": dws_name,
+            "clean_name": clean_name(dws_name),
+            "averages": {
+                "matched_system_name": dws_name,
+                "hardness_avg": round(float(hardness), 4) if hardness is not None else None,
+                "iron_avg": round(float(iron), 4) if iron is not None else None,
+                "ph_avg": round(float(ph), 4) if ph is not None else None
+            }
+        })
+    print(f"Calculated averages for {len(dws_averages)} DWSP systems.")
+    
+    # 4. Fetch all unique location names from water_quality_data
+    print("Fetching unique locations from 'water_quality_data'...")
+    cur.execute("SELECT DISTINCT location FROM water_quality_data;")
+    db_locations = [row[0] for row in cur.fetchall()]
+    print(f"Fetched {len(db_locations):,} unique locations.")
+    
+    # 5. Run loose token matching
+    print("Running loose token-matching algorithm...")
+    matches_found = 0
+    update_data = []
+    
+    for loc in db_locations:
+        clean_db = clean_name(loc)
+        if not clean_db or len(clean_db) < 3:
+            continue
+            
+        best_match = None
+        for dws in dws_averages:
+            clean_csv = dws["clean_name"]
+            if not clean_csv or len(clean_csv) < 3:
+                continue
+                
+            if clean_csv in clean_db or clean_db in clean_csv:
+                best_match = dws
+                if clean_db == clean_csv:
+                    break
+                    
+        if best_match:
+            update_data.append((json.dumps(best_match["averages"]), loc))
+            matches_found += 1
+            
+    print(f"Algorithm finished. Found {matches_found:,} matching locations out of {len(db_locations):,}.")
+    
+    # 6. Execute updates in a transaction
+    if update_data:
+        print("Updating PostgreSQL records using optimized temp table join...")
+        from psycopg2.extras import execute_values
+        
+        # We need to restructure the list of tuples to (location, json_payload)
+        temp_insert_data = [(loc, payload) for payload, loc in update_data]
+        
+        # Create a temp table
+        cur.execute("CREATE TEMP TABLE temp_matched_dwsp (location VARCHAR, dwsp_data JSONB);")
+        
+        # Bulk insert matches into temp table
+        execute_values(
+            cur,
+            "INSERT INTO temp_matched_dwsp (location, dwsp_data) VALUES %s",
+            temp_insert_data
+        )
+        
+        # Run bulk update using JOIN
+        print("Executing bulk JOIN update...")
+        cur.execute("""
+            UPDATE water_quality_data
+            SET dwsp_data = t.dwsp_data
+            FROM temp_matched_dwsp t
+            WHERE water_quality_data.location = t.location;
+        """)
+        
+        conn.commit()
+        print("Database updates successfully saved.")
+        
+        # Verify the updates
+        cur.execute("SELECT COUNT(DISTINCT location) FROM water_quality_data WHERE dwsp_data IS NOT NULL;")
+        matched_loc_count = cur.fetchone()[0]
+        print(f"[✓] VERIFICATION: {matched_loc_count:,} locations in water_quality_data have non-null 'dwsp_data'.")
+        
+        # Print a preview of the first 5 matched records
+        cur.execute("""
+            SELECT DISTINCT location, dwsp_data 
+            FROM water_quality_data 
+            WHERE dwsp_data IS NOT NULL 
+            ORDER BY location 
+            LIMIT 5;
+        """)
+        preview_rows = cur.fetchall()
+        print("\n[✓] Loose Matching Preview:")
+        for idx, row in enumerate(preview_rows, 1):
+            loc_name, payload = row
+            print(f"  {idx}. Location: '{loc_name}'")
+            print(f"     -> Matched System: '{payload['matched_system_name']}'")
+            print(f"     -> Hardness: {payload['hardness_avg']} mg/L, Iron: {payload['iron_avg']} mg/L, pH: {payload['ph_avg']}")
+    else:
+        print("No matches were found. Database was not updated.")
+        
+    cur.close()
+    conn.close()
+
+if __name__ == "__main__":
+    run_matching()

@@ -1,0 +1,11 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+water_data.db
+DWSP/2013-2017 CSV FINAL.csv
+data/Test Data - Raw Data 2017_18.xlsx

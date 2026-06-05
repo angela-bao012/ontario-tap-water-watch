@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "location": {
+      "title": "Location",
+      "description": "Represents a city or municipality in Ontario with water quality data.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the city or town" },
+        "postalCodePrefix": { "type": "string", "description": "First 3 characters of the postal code" },
+        "populationServed": { "type": "number", "description": "Approximate population served by the water system" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "waterTest": {
+      "title": "Water Test Result",
+      "description": "A specific test result for a contaminant in a location's water supply.",
+      "type": "object",
+      "properties": {
+        "locationId": { "type": "string", "description": "Reference to the location document" },
+        "contaminant": { "type": "string", "description": "Name of the mineral or contaminant" },
+        "level": { "type": "number", "description": "Measured concentration" },
+        "unit": { "type": "string", "description": "Unit of measurement (e.g., ppb, ppm)" },
+        "legalLimit": { "type": "number", "description": "Maximum legal limit (MCL)" },
+        "healthGuideline": { "type": "number", "description": "Health-based safety guideline" },
+        "detected": { "type": "boolean", "description": "Whether the contaminant was detected at all" },
+        "riskLevel": { "type": "string", "enum": ["low", "moderate", "high"] }
+      },
+      "required": ["locationId", "contaminant", "level"]
+    },
+    "mineralInfo": {
+      "title": "Mineral Information",
+      "description": "Educational data about minerals and contaminants found in water.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "healthEffects": { "type": "string" },
+        "commonSources": { "type": "string" },
+        "category": { "type": "string", "enum": ["Safe", "Trace", "Health Concern"] }
+      },
+      "required": ["name", "description"]
+    }
+  },
+  "firestore": {
+    "/locations/{locationId}": {
+      "schema": "location",
+      "description": "Collection of Ontario locations"
+    },
+    "/waterTests/{testId}": {
+      "schema": "waterTest",
+      "description": "Test results for all locations"
+    },
+    "/minerals/{mineralId}": {
+      "schema": "mineralInfo",
+      "description": "Educational content about minerals"
+    }
+  }
+}

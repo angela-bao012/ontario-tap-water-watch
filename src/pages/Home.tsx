@@ -10,23 +10,22 @@ export function HomePage() {
         <div className="absolute top-0 right-0 -z-10 opacity-5 sm:opacity-10">
           <Droplets className="w-48 sm:w-96 h-48 sm:h-96 text-blue-600" />
         </div>
-        
+
         <div className="max-w-3xl">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-3xl sm:text-5xl lg:text-6xl font-sans font-bold text-blue-900 tracking-tight leading-tight"
           >
             Know What's in Your <span className="text-blue-600">Tap Water</span>
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-600 leading-relaxed"
           >
-            Ontario Tap Water Watch provides comprehensive data on water quality across the province. 
-            We make complex environmental testing results easy to understand.
+            Ontario Tap Water Watch provides comprehensive, up-to-date data on water quality across the province.
           </motion.p>
 
           {/* Ontario Water Quality Blurb */}
@@ -36,27 +35,27 @@ export function HomePage() {
             transition={{ delay: 0.15 }}
             className="mt-6 sm:mt-8 bg-blue-50 border border-blue-100 rounded-xl sm:rounded-2xl p-4 sm:p-6"
           >
-            <p className="text-sm sm:text-base text-gray-700 leading-relaxed">
-              Ontario's tap water is among the safest globally, with over 99.9% of municipal tests consistently 
-              meeting strict provincial standards. This reliability is maintained through a multi-barrier approach, 
-              combining source protection, continuous testing, and mandatory training for system operators.
+            <p className="text-gray-700 text-base leading-relaxed">
+              <strong>Ontario's tap water is 99.9% safe. How is yours?</strong> We track thousands of
+              provincial water quality reports and translate complex testing data into
+              simple safety updates for your home, school, or daycare.
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="mt-6 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4"
           >
-            <Link 
-              to="/search" 
+            <Link
+              to="/search"
               className="w-full sm:w-auto text-center px-6 sm:px-8 py-3 sm:py-4 bg-blue-600 text-white rounded-xl font-bold text-base sm:text-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
             >
               Search My Location <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
-            <Link 
-              to="/education" 
+            <Link
+              to="/education"
               className="w-full sm:w-auto text-center px-6 sm:px-8 py-3 sm:py-4 bg-white text-blue-600 border-2 border-blue-100 rounded-xl font-bold text-base sm:text-lg hover:border-blue-200 hover:bg-blue-50 transition-all"
             >
               Learn About Water
@@ -106,7 +105,7 @@ export function HomePage() {
             We track thousands of water quality reports to ensure municipalities are meeting safety standards.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center text-center p-4 sm:p-6">
           <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-sm">
             <Info className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />

@@ -140,7 +140,7 @@ function formatParameterName(name: string | undefined | null): string {
   if (!name) return "";
   const s = name.trim();
   const lower = s.toLowerCase();
-  
+
   const exactMap: Record<string, string> = {
     "nitrate (as nitrogen)": "Nitrate (as nitrogen)",
     "nitrite (as nitrogen)": "Nitrite (as nitrogen)",
@@ -157,11 +157,11 @@ function formatParameterName(name: string | undefined | null): string {
     "1,1-dichloroethylene (vinylidene chloride)": "1,1-Dichloroethylene (vinylidene chloride)",
     "mcpa": "MCPA",
   };
-  
+
   if (exactMap[lower]) {
     return exactMap[lower];
   }
-  
+
   return s
     .split(" ")
     .map((word, index) => {
@@ -172,19 +172,19 @@ function formatParameterName(name: string | undefined | null): string {
         }
         return word.toLowerCase();
       }
-      
+
       const cleanWord = word.replace(/[^\w]/g, "").toUpperCase();
       if (cleanWord === "NDMA" || cleanWord === "PCBS" || cleanWord === "MCPA" || cleanWord === "THMS" || cleanWord === "HAAS" || cleanWord === "THM" || cleanWord === "HAA") {
         return word.toUpperCase();
       }
-      
+
       if (word.includes("-")) {
         return word.split("-").map((p) => {
           if (/^\d[\d,]*$/.test(p)) return p;
           return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase();
         }).join("-");
       }
-      
+
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })
     .join(" ");
@@ -226,7 +226,7 @@ function formatOwnerName(str: string | undefined | null): string {
 
 function formatSampleTypes(types?: string[]): string {
   if (!types || types.length === 0) return "";
-  
+
   const allParts: string[] = [];
   types.forEach(typeStr => {
     // Split by slash "/", semi-colon ";", or dash "-"
@@ -245,8 +245,36 @@ function formatSampleTypes(types?: string[]): string {
       }
     });
   });
-  
+
   return allParts.join(", ");
+}
+
+export function getSlug(term: string): string {
+  let slug = term.toLowerCase()
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\s*&\s*/g, "-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (slug === "escherichia-coli" || slug === "e-coli" || slug === "total-coliform" || slug === "coliform") {
+    return "microbes";
+  }
+  if (slug === "nitrate-nitrite" || slug === "nitrate-nitrite-as-nitrogen" || slug === "nitrate-as-nitrogen" || slug === "nitrite-as-nitrogen") {
+    return "nitrate";
+  }
+  if (slug === "trihalomethane" || slug === "trihalomethanes" || slug === "trihalomethanes-total" || slug === "trihalomethanes-thms") {
+    return "trihalomethanes-thms";
+  }
+  if (slug === "haloacetic" || slug === "total-haloacetic-acids" || slug === "haloacetic-acids" || slug === "haloacetic-acids-haas") {
+    return "haloacetic-acids-haas";
+  }
+  if (slug === "calcium-magnesium") {
+    return "calcium-magnesium";
+  }
+  if (["hardness", "iron", "manganese", "aluminum", "zinc", "ph", "sodium", "turbidity"].includes(slug)) {
+    return "hardness";
+  }
+  return slug;
 }
 
 const parameterDescriptions: Record<string, string> = {
@@ -282,6 +310,58 @@ const parameterDescriptions: Record<string, string> = {
   "taste": "How water tastes. Strange tastes show there might be minerals or chemical pollution in the water.",
   "odour": "How water smells. Good water has no smell; bad smells show organic dirt or chemical pollution.",
   "colour": "How water looks. Yellow or brown water shows there is dirt, rust, or organic matter in it.",
+  "1,1-dichloroethylene": "An industrial chemical used to make plastic wrap and adhesives. Regulated strictly to prevent liver and kidney damage.",
+  "1,2-dichlorobenzene": "A chemical used in industrial solvents, dyes, and paints. High levels can affect the liver and nervous system.",
+  "1,2-dichloroethane": "A solvent used to make PVC pipes. It is regulated in drinking water because long-term exposure can raise cancer risk.",
+  "1,4-dichlorobenzene": "A chemical compound used in deodorizers and plastics. Long-term exposure can cause liver and kidney damage.",
+  "2,3,4,6-tetrachlorophenol": "A chemical compound historically used as a wood preservative. Regulated in water systems due to toxicity concerns.",
+  "2,4,6-trichlorophenol": "A chemical byproduct used in pesticides and wood preservatives. Long-term consumption can increase cancer risk.",
+  "2,4-dichlorophenol": "A chemical compound used to make pesticides. High levels can cause kidney and liver issues.",
+  "alachlor": "An agricultural herbicide used to control weeds in corn and soy crops. Strictly regulated due to potential health effects.",
+  "azinphos-methyl": "An organophosphate insecticide. Monitored strictly in water to ensure levels remain safe for public consumption.",
+  "benzo(a)pyrene": "A byproduct of incomplete combustion of organic materials like coal tar or fuel. Strictly regulated due to high toxicity and cancer risk.",
+  "bromate": "A chemical byproduct formed when ozone used for water treatment reacts with natural bromide. High levels can increase cancer risk.",
+  "bromide": "A naturally occurring salt found in groundwater. It is harmless on its own but can form toxic byproducts during disinfection.",
+  "bromoxynil": "A pesticide used to control weeds in grain crops. Monitored closely in agricultural regions to protect tap water safety.",
+  "carbaryl": "A common insecticide used to control insects on crops and lawns. Levels in drinking water are kept well below safety limits.",
+  "carbofuran": "A toxic insecticide used on various agricultural crops. Strictly regulated in Ontario to protect drinking water sources.",
+  "carbon tetrachloride": "A toxic solvent once widely used in cleaning agents. Banned in household items, it is monitored to prevent liver and kidney issues.",
+  "chlorate": "A byproduct formed during water disinfection when using chlorine dioxide or sodium hypochlorite. Regulated to protect red blood cells.",
+  "chlorite": "A byproduct of water treatment disinfection using chlorine dioxide. Strictly monitored to prevent nervous system issues.",
+  "chlorpyrifos": "An insecticide used in farming and greenhouses. Ontario monitors its levels closely to prevent nervous system risks.",
+  "diazinon": "An agricultural insecticide. Ontario regulates its presence to ensure levels stay safe for public use.",
+  "dicamba": "A herbicide used to control broadleaf weeds. Levels are monitored to protect water quality in agricultural zones.",
+  "dichloromethane": "An organic solvent used in paint strippers and metal cleaning. Regulated strictly in drinking water due to potential health risks.",
+  "diclofop-methyl": "A selective herbicide used to control wild oats and annual grassy weeds. Regulated to ensure safety.",
+  "dimethoate": "An organophosphate insecticide used on agricultural crops. Monitored strictly in drinking water systems.",
+  "dioxin": "Highly toxic industrial byproducts of combustion and chemical manufacturing. Strictly regulated at extremely low levels.",
+  "diquat": "A fast-acting herbicide used to control aquatic weeds. Regulated to prevent liver and kidney issues.",
+  "dissolved organic carbon": "Organic carbon compounds dissolved in water from decaying leaves and plants. Harmless on its own but can form byproducts.",
+  "diuron": "A herbicide used for weed control in agricultural and non-crop areas. Regulated to ensure safety.",
+  "gross alpha": "Alpha particle radiation from natural radioactive minerals in deep rocks. Monitored to prevent long-term cancer risks.",
+  "gross beta": "Beta particle radiation from natural and man-made radioactive minerals. Regulated to ensure public safety.",
+  "mcpa": "A herbicide used to control broadleaf weeds in crops and turf. Monitored regularly to ensure water remains safe.",
+  "malathion": "A widely used insecticide for farming and mosquito control. Regulated in water to ensure levels stay safe.",
+  "metolachlor": "A herbicide used on corn, soybeans, and other crops. Regularly monitored in drinking water sources.",
+  "metribuzin": "A herbicide used to control weeds in potato, tomato, and soybean crops. Regulated to protect drinking water.",
+  "microcystin": "A natural toxin produced by blue-green algae blooms. Highly toxic to the liver; strictly monitored during warm seasons.",
+  "monochlorobenzene": "An industrial solvent and chemical intermediate. High levels can affect the liver, kidneys, and nervous system.",
+  "o-phosphate": "Orthophosphate is added to water systems to coat pipes and prevent lead from leaching into tap water.",
+  "organic carbon": "Total organic carbon from natural vegetation decay. Indicates general biological activity and organic content.",
+  "paraquat": "A highly toxic agricultural herbicide. Regulated strictly to prevent accidental exposure and protect water safety.",
+  "pentachlorophenol": "A wood preservative chemical. Regulated strictly in drinking water due to high toxicity.",
+  "phorate": "A toxic organophosphate insecticide used on agricultural crops. Monitored strictly to prevent health risks.",
+  "picloram": "A herbicide used to control woody plants and broadleaf weeds. Monitored closely in farming regions.",
+  "prometryne": "A selective herbicide used for weed control. Regulated in Ontario to ensure levels stay within safety limits.",
+  "simazine": "A herbicide used to control weeds in crop and non-crop areas. Regulated to protect public drinking water.",
+  "sulphide": "A natural compound that can give water a 'rotten egg' smell. Harmless to health but aesthetically unpleasant.",
+  "terbufos": "A toxic soil insecticide used on agricultural crops. Regulated strictly to keep drinking water safe.",
+  "tetrachloroethylene": "A dry-cleaning solvent and industrial degreaser. Regulated strictly to prevent liver damage and cancer risk.",
+  "toluene": "An industrial chemical found in gasoline and solvents. High levels can cause nervous system and kidney issues.",
+  "triallate": "A herbicide used to control wild oats in cereal crops. Monitored regularly in agricultural water supplies.",
+  "trichloroethylene": "A toxic solvent used as a metal degreaser. Regulated strictly in drinking water to prevent cancer risk.",
+  "trifluralin": "A widely used herbicide. Ontario monitors it to make sure agricultural runoff does not affect drinking water.",
+  "tritium": "A radioactive isotope of hydrogen, naturally occurring or from nuclear facilities. Ontario regulates it strictly.",
 };
 
 const getParameterDescription = (name: string): string => {
@@ -295,36 +375,17 @@ const getParameterDescription = (name: string): string => {
 const DefinitionLink = ({ term, children }: { term: string; children: React.ReactNode }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const definition = getParameterDescription(term);
-
-  let slug = term.toLowerCase()
-    .replace(/\s*&\s*/g, "-")
-    .replace(/\s*\([^)]*\)/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-    
-  if (slug === "escherichia-coli" || slug === "e-coli" || slug === "total-coliform" || slug === "coliform") {
-    slug = "microbes";
-  } else if (slug === "nitrate-nitrite" || slug === "nitrate-nitrite-as-nitrogen") {
-    slug = "nitrate";
-  } else if (slug === "trihalomethane" || slug === "trihalomethanes" || slug === "trihalomethanes-total") {
-    slug = "trihalomethanes-thms";
-  } else if (slug === "haloacetic" || slug === "total-haloacetic-acids" || slug === "haloacetic-acids") {
-    slug = "haloacetic-acids-haas";
-  } else if (slug === "calcium-magnesium") {
-    slug = "calcium-magnesium";
-  } else if (["hardness", "iron", "manganese", "aluminum", "zinc", "ph", "sodium", "turbidity"].includes(slug)) {
-    slug = "hardness";
-  }
+  const slug = getSlug(term);
 
   return (
-    <span 
+    <span
       className="relative inline-block"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
       onClick={(e) => e.stopPropagation()}
     >
-      <Link 
-        to={`/education#${slug}`} 
+      <Link
+        to={`/education#${slug}`}
         className="underline decoration-dotted decoration-blue-500 hover:text-blue-600 transition-colors font-semibold"
       >
         {children}
@@ -519,14 +580,14 @@ const EXCEL_LIMITS: Record<string, string> = {
 
 const standardizeLimitText = (limitText: string, sampleUnit: string): string => {
   if (!limitText || limitText === "N/A" || limitText.trim() === "") return limitText;
-  
+
   const match = limitText.trim().match(/^([0-9.]+)\s*(.*)$/);
   if (!match) return limitText;
-  
+
   const val = parseFloat(match[1]);
   const limitUnit = match[2].trim().toUpperCase();
   const sUnit = (sampleUnit || "").trim().toUpperCase();
-  
+
   let targetVal = val;
   let targetUnit = limitUnit;
 
@@ -626,19 +687,19 @@ const getDecimalPlaces = (val: number | null | undefined): number => {
 
 const getParameterPrecision = (test: WaterTest, samples?: any[]): number => {
   let maxDecimals = 0;
-  
+
   if (test.level !== null && test.level !== undefined) {
     maxDecimals = Math.max(maxDecimals, getDecimalPlaces(test.level));
   }
-  
+
   if (test.maxLevel !== null && test.maxLevel !== undefined) {
     maxDecimals = Math.max(maxDecimals, getDecimalPlaces(test.maxLevel));
   }
-  
+
   if (test.legalLimit !== null && test.legalLimit !== undefined) {
     maxDecimals = Math.max(maxDecimals, getDecimalPlaces(test.legalLimit));
   }
-  
+
   const limitInfo = getOntarioLimitInfo(test.contaminant, test.level, test.unit, test.exceedanceCount || 0, test.parameterLimit);
   if (limitInfo && limitInfo.limitText) {
     const match = limitInfo.limitText.trim().match(/^([0-9.]+)/);
@@ -649,7 +710,7 @@ const getParameterPrecision = (test: WaterTest, samples?: any[]): number => {
       }
     }
   }
-  
+
   if (samples && samples.length > 0) {
     samples.forEach(s => {
       if (s.result_value !== null && s.result_value !== undefined) {
@@ -666,7 +727,7 @@ const getParameterPrecision = (test: WaterTest, samples?: any[]): number => {
       }
     });
   }
-  
+
   return Math.min(3, maxDecimals);
 };
 
@@ -712,7 +773,13 @@ const getContaminantFilterTarget = (name: string): string => {
   return "Activated Carbon";
 };
 
-const getFilterActionDescription = (filterType: string): string => {
+const getFilterActionDescription = (filterType: string, contaminantName?: string): string => {
+  if (contaminantName) {
+    const norm = contaminantName.toLowerCase();
+    if (norm.includes("nitrate") || norm.includes("nitrite")) {
+      return "Removes agricultural chemicals";
+    }
+  }
   switch (filterType) {
     case "UV / RO System":
       return "Kills bacteria and microbes";
@@ -911,8 +978,7 @@ export function SearchPage() {
   const [showMicrobesModal, setShowMicrobesModal] = useState(false);
   const [showAdditivesModal, setShowAdditivesModal] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'safe' | 'exceedance'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'municipal' | 'other'>('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'microbe' | 'chemical' | 'additive'>('all');
+  const [supplyFilter, setSupplyFilter] = useState<'all' | 'city' | 'school'>('all');
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [filterLoading, setFilterLoading] = useState(false);
   const isDetailLoading = dataLoading || filterLoading;
@@ -925,7 +991,7 @@ export function SearchPage() {
       }, 400);
       return () => clearTimeout(timer);
     }
-  }, [statusFilter, categoryFilter, typeFilter]);
+  }, [statusFilter, supplyFilter]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 639px)");
@@ -935,19 +1001,19 @@ export function SearchPage() {
     return () => media.removeEventListener("change", listener);
   }, []);
 
-  const hardnessInfo = selectedLocation 
-    ? getHardnessInfo(waterTests, selectedLocation.dwsp_data) 
+  const hardnessInfo = selectedLocation
+    ? getHardnessInfo(waterTests, selectedLocation.dwsp_data)
     : { hardness: 0, pct: 10, statusText: "NO DATA", textColor: "text-gray-400", userTip: "No hardness mineral measurements available.", feelsLike: "", practicalAdvice: "" };
 
   const getParameterCategory = (name: string): 'microbe' | 'chemical' | 'additive' | 'aesthetic' => {
     const lower = name.toLowerCase();
     if (
-      lower.includes('coliform') || 
-      lower.includes('e. coli') || 
-      lower.includes('e.coli') || 
-      lower.includes('bacteria') || 
-      lower.includes('microbe') || 
-      lower.includes('heterotrophic') || 
+      lower.includes('coliform') ||
+      lower.includes('e. coli') ||
+      lower.includes('e.coli') ||
+      lower.includes('bacteria') ||
+      lower.includes('microbe') ||
+      lower.includes('heterotrophic') ||
       lower.includes('hpc') ||
       lower.includes('background')
     ) {
@@ -1120,7 +1186,7 @@ export function SearchPage() {
     if (isExceeded) {
       return "Action Required";
     }
-    
+
     if (test.level !== null && limitInfo) {
       const match = limitInfo.limitText.trim().match(/^([0-9.]+)/);
       if (match) {
@@ -1130,7 +1196,7 @@ export function SearchPage() {
         }
       }
     }
-    
+
     return "Safe";
   };
 
@@ -1212,16 +1278,16 @@ export function SearchPage() {
     const tierA = getSortTier(a);
     const tierB = getSortTier(b);
     if (tierA !== tierB) return tierA - tierB;
-    
+
     const nameA = a.contaminant;
     const nameB = b.contaminant;
     const isLetterA = /^[a-zA-Z]/.test(nameA.trim());
     const isLetterB = /^[a-zA-Z]/.test(nameB.trim());
-    
+
     if (isLetterA !== isLetterB) {
       return isLetterA ? 1 : -1; // letter starting ones come LAST
     }
-    
+
     return nameA.localeCompare(nameB);
   });
 
@@ -1237,7 +1303,7 @@ export function SearchPage() {
   const loadPastSamples = async (contaminant: string, unit: string) => {
     const key = `${contaminant}_${unit}`;
     if (rawSamplesData[key] || rawSamplesLoading[key]) return;
-    
+
     setRawSamplesLoading(prev => ({ ...prev, [key]: true }));
     try {
       const res = await fetch(`/api/water-data?location=${encodeURIComponent(selectedLocation!.dws_name)}&microbe=${encodeURIComponent(contaminant)}&limit=1000`);
@@ -1250,7 +1316,7 @@ export function SearchPage() {
           const nameMatch = (item.parameter_name || "").toLowerCase().trim() === contaminant.toLowerCase().trim();
           return unitMatch && nameMatch;
         });
-        
+
         // De-duplicate on sample date + value + unit
         const uniqueData = Array.from(
           new Map(
@@ -1282,7 +1348,7 @@ export function SearchPage() {
         </div>
       );
     }
-    
+
     if (rawSamplesData[rowKey].length > 0) {
       return (
         <div className="space-y-1 sm:space-y-1.5 max-h-36 sm:max-h-48 overflow-y-auto pr-1">
@@ -1294,10 +1360,10 @@ export function SearchPage() {
                 <span className="font-semibold text-gray-600 text-[8px] sm:text-[10px]">{sample.sample_date}</span>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-gray-900 text-[9px] sm:text-xs">
-                    {sample.result_value !== null 
-                      ? `${sample.result_value.toFixed(precision)} ${formatUnitForDisplay(sample.result_unit)}` 
-                      : (sample.exceedance === 'Y' 
-                        ? `Present (${formatUnitForDisplay(sample.result_unit || test.unit)})` 
+                    {sample.result_value !== null
+                      ? `${sample.result_value.toFixed(precision)} ${formatUnitForDisplay(sample.result_unit)}`
+                      : (sample.exceedance === 'Y'
+                        ? `Present (${formatUnitForDisplay(sample.result_unit || test.unit)})`
                         : `${(0).toFixed(precision)} ${formatUnitForDisplay(sample.result_unit || test.unit)}`
                       )
                     }
@@ -1313,7 +1379,7 @@ export function SearchPage() {
         </div>
       );
     }
-    
+
     return (
       <div className="text-center text-[8px] sm:text-[10px] text-gray-400 py-2.5 bg-white rounded-md sm:rounded-lg border border-gray-100">
         No sample history available.
@@ -1338,7 +1404,7 @@ export function SearchPage() {
       const url = `/api/water-data?location=${encodeURIComponent(locationName)}&year=${year}&aggregate=true`;
       const res = await fetch(url);
       const data: WaterDataResponse = await res.json();
-      
+
       // De-duplicate tests
       const testsMap = new Map<string, WaterTest>();
       (data.tests || []).forEach(t => {
@@ -1397,7 +1463,7 @@ export function SearchPage() {
           if (res.ok) {
             const data = await res.json();
             setResults(data || []);
-            
+
             if (routeDwsId) {
               const dwsIdNum = parseInt(routeDwsId, 10);
               if (!isNaN(dwsIdNum)) {
@@ -1410,7 +1476,7 @@ export function SearchPage() {
                   const testRes = await fetch(`/api/locations/${dwsIdNum}/tests?year=${selectedYear}`);
                   if (testRes.ok) {
                     const testData = await testRes.json();
-                    
+
                     // De-duplicate tests
                     const testsMap = new Map<string, WaterTest>();
                     (testData.tests || []).forEach(t => {
@@ -1474,28 +1540,22 @@ export function SearchPage() {
       if (!loc.exceedances || loc.exceedances === 0) return false;
     }
 
-    // 2. Category Filter
-    if (categoryFilter === 'municipal') {
-      const cat = (loc.dws_category || "").toLowerCase();
-      if (!cat.includes("municipal") || cat.includes("non-municipal")) return false;
-    } else if (categoryFilter === 'other') {
-      const cat = (loc.dws_category || "").toLowerCase();
-      if (cat.includes("municipal") && !cat.includes("non-municipal")) return false;
-    }
-
-    // 3. Type Filter
-    if (typeFilter !== 'all') {
+    // 2. Supply Filter
+    if (supplyFilter === 'city') {
       const types = (loc.sample_types || []).map(t => t.toLowerCase());
-      if (typeFilter === 'microbe') {
-        const hasMicrobe = types.some(t => t.includes('micro') || t.includes('bacteria') || t.includes('coli') || t.includes('coliform'));
-        if (!hasMicrobe) return false;
-      } else if (typeFilter === 'chemical') {
-        const hasChemical = types.some(t => t.includes('chem') || t.includes('metal') || t.includes('lead') || t.includes('arsenic') || t.includes('copper') || t.includes('nitrate') || t.includes('nitrite'));
-        if (!hasChemical) return false;
-      } else if (typeFilter === 'additive') {
-        const hasAdditive = types.some(t => t.includes('add') || t.includes('fluoride') || t.includes('chlorine') || t.includes('treatment') || t.includes('byproduct') || t.includes('thms') || t.includes('haas'));
-        if (!hasAdditive) return false;
-      }
+      const hasCityType = types.some(t =>
+        t.includes("distributed drinking water") ||
+        t.includes("treated surface water")
+      );
+      if (!hasCityType) return false;
+    } else if (supplyFilter === 'school') {
+      const types = (loc.sample_types || []).map(t => t.toLowerCase());
+      const hasSchoolType = types.some(t =>
+        t.includes("plumbing") ||
+        t.includes("flushed drinking water") ||
+        t.includes("standing drinking water")
+      );
+      if (!hasSchoolType) return false;
     }
 
     return true;
@@ -1713,7 +1773,7 @@ export function SearchPage() {
                   className="w-full px-5 py-3.5 rounded-2xl bg-gray-50 focus:bg-white focus:ring-4 focus:ring-blue-100 outline-none transition-all text-sm sm:text-base pl-11 pr-24 font-sans font-medium"
                 />
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <button 
+                <button
                   type="submit"
                   disabled={searchTerm.length < 2}
                   className="absolute right-1.5 top-1.5 bottom-1.5 bg-blue-600 text-white px-4 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer font-sans"
@@ -1743,22 +1803,38 @@ export function SearchPage() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-              className={cn(
-                "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer font-sans",
-                showFiltersPanel || statusFilter !== 'all' || categoryFilter !== 'all' || typeFilter !== 'all'
-                  ? "bg-blue-50 text-blue-700 shadow-sm"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer font-sans",
+                  showFiltersPanel || statusFilter !== 'all' || supplyFilter !== 'all'
+                    ? "bg-blue-50 text-blue-700 shadow-sm"
+                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                )}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                <span>Filters</span>
+                {(statusFilter !== 'all' || supplyFilter !== 'all') && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+                )}
+              </button>
+
+              {(statusFilter !== 'all' || supplyFilter !== 'all') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setSupplyFilter('all');
+                  }}
+                  className="p-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer flex items-center justify-center border border-red-100"
+                  title="Clear all filters"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               )}
-            >
-              <Filter className="w-3.5 h-3.5" />
-              <span>Filters</span>
-              {(statusFilter !== 'all' || categoryFilter !== 'all' || typeFilter !== 'all') && (
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
-              )}
-            </button>
+            </div>
           </div>
 
           {/* Expandable Filter Options Drawer */}
@@ -1771,7 +1847,7 @@ export function SearchPage() {
                 transition={{ duration: 0.15, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3.5 pb-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3.5 pb-1">
                   {/* Filter 1: Status */}
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">Safety Status</label>
@@ -1787,51 +1863,38 @@ export function SearchPage() {
                               : "bg-gray-50 text-gray-600 hover:bg-gray-100"
                           )}
                         >
-                          {s === 'all' ? 'All' : s === 'safe' ? 'Safe' : 'Exceedance'}
+                          {s === 'all' ? 'All' : s === 'safe' ? 'Safe' : 'Attention Required'}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Filter 2: Category */}
+                  {/* Filter 2: Water Supply */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">System Type</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">Water Supply</label>
                     <div className="flex gap-1.5">
-                      {(['all', 'municipal', 'other'] as const).map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => setCategoryFilter(c)}
-                          className={cn(
-                            "flex-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all truncate cursor-pointer font-sans",
-                            categoryFilter === c
-                              ? "bg-slate-900 text-white shadow-sm"
-                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                          )}
-                        >
-                          {c === 'all' ? 'All' : c === 'municipal' ? 'Municipal' : 'Other'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Filter 3: Tested Parameter Types */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider font-sans">Tested Types</label>
-                    <div className="flex gap-1.5">
-                      {(['all', 'microbe', 'chemical', 'additive'] as const).map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setTypeFilter(t)}
-                          className={cn(
-                            "flex-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all truncate cursor-pointer font-sans",
-                            typeFilter === t
-                              ? "bg-slate-900 text-white shadow-sm"
-                              : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                          )}
-                        >
-                          {t === 'all' ? 'All' : t === 'microbe' ? 'Microbe' : t === 'chemical' ? 'Chem' : 'Additive'}
-                        </button>
-                      ))}
+                      <button
+                        onClick={() => setSupplyFilter(supplyFilter === 'city' ? 'all' : 'city')}
+                        className={cn(
+                          "flex-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all truncate cursor-pointer font-sans",
+                          supplyFilter === 'city'
+                            ? "bg-slate-900 text-white shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        )}
+                      >
+                        City Water Supply
+                      </button>
+                      <button
+                        onClick={() => setSupplyFilter(supplyFilter === 'school' ? 'all' : 'school')}
+                        className={cn(
+                          "flex-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all truncate cursor-pointer font-sans",
+                          supplyFilter === 'school'
+                            ? "bg-slate-900 text-white shadow-sm"
+                            : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                        )}
+                      >
+                        School & Daycare Water Supply
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1895,7 +1958,7 @@ export function SearchPage() {
                         )}
                         {loc.latest_date && (
                           <p className="text-[10px] text-gray-500 mt-0.5">
-                            <span className="font-bold text-gray-600 font-sans">Latest Reporting Date:</span> {formatDateStr(loc.latest_date)}
+                            <span className="font-bold text-gray-600 font-sans">Latest Test Date:</span> {formatDateStr(loc.latest_date)}
                           </p>
                         )}
                         {loc.sample_types && loc.sample_types.length > 0 && (
@@ -1969,7 +2032,7 @@ export function SearchPage() {
                   {(() => {
                     const hasHighRiskExceedance = exceedances.some(e => !isLowRiskParameter(e.parameter_name));
                     const hasLowRiskExceedance = exceedances.some(e => isLowRiskParameter(e.parameter_name));
-                    
+
                     if (hasHighRiskExceedance || hasLowRiskExceedance) {
                       return (
                         <span className="px-2.5 py-1 sm:px-4 sm:py-2 bg-red-50 text-red-700 rounded-full text-[10px] sm:text-xs font-bold flex items-center gap-1.5 border border-red-200 shadow-sm uppercase tracking-wider">
@@ -1993,8 +2056,8 @@ export function SearchPage() {
                   onClick={() => setDetailTab('quality')}
                   className={cn(
                     "flex-1 py-2 px-2 sm:py-2.5 sm:px-3 rounded-lg text-[11px] sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer",
-                    detailTab === 'quality' 
-                      ? "bg-white text-blue-800 shadow-sm border border-gray-200/50" 
+                    detailTab === 'quality'
+                      ? "bg-white text-blue-800 shadow-sm border border-gray-200/50"
                       : "text-gray-500 hover:text-gray-700 bg-transparent"
                   )}
                 >
@@ -2004,8 +2067,8 @@ export function SearchPage() {
                   onClick={() => setDetailTab('filters')}
                   className={cn(
                     "flex-1 py-2 px-2 sm:py-2.5 sm:px-3 rounded-lg text-[11px] sm:text-sm font-bold transition-all flex items-center justify-center gap-2 relative cursor-pointer",
-                    detailTab === 'filters' 
-                      ? "bg-white text-blue-800 shadow-sm border border-gray-200/50" 
+                    detailTab === 'filters'
+                      ? "bg-white text-blue-800 shadow-sm border border-gray-200/50"
                       : "text-gray-500 hover:text-gray-700 bg-transparent"
                   )}
                 >
@@ -2037,130 +2100,132 @@ export function SearchPage() {
                         <div className="border border-gray-200 bg-gray-50/5 rounded-2xl p-3 sm:p-5 shadow-sm">
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
                             {/* Card 1: Bacteria & Microbes */}
-                            <div 
+                            <div
                               onClick={() => setShowMicrobesModal(true)}
-                              className="flex flex-col space-y-2.5 p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between"
+                              className="flex flex-col p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
                             >
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2.5">
+                              <div className="flex flex-col flex-grow space-y-2">
+                                <div className="flex items-center gap-2.5 shrink-0">
                                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0 border border-green-100 shadow-sm group-hover:scale-105 transition-transform duration-200">
                                     <Microscope className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
                                   </div>
                                   <div>
                                     <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">
-                                      <DefinitionLink term="Microbes">
-                                        Bacteria & Microbes
-                                      </DefinitionLink>
+                                      Bacteria & Microbes
                                     </h4>
                                   </div>
                                 </div>
-                                <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium">
-                                  {microbes.length === 0 
-                                    ? "No microbe data available." 
-                                    : microbeConfig.statusText === "Safe"
-                                      ? "Tested for E. Coli and Coliforms. All criteria met."
-                                      : "Bacteria criteria exceeded. Purification recommended."}
-                                </p>
-                                
+                                <div className="flex-grow min-h-[40px] sm:min-h-[48px]">
+                                  <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium">
+                                    {microbes.length === 0
+                                      ? "No microbes tested."
+                                      : microbeConfig.statusText === "Safe"
+                                        ? "Tested for E. Coli and Coliforms. All criteria met."
+                                        : "Too much bacteria detected. Purification or filtering recommended."}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col justify-end mt-auto pt-2 space-y-3">
                                 {/* Safety Bar */}
-                                <div className="space-y-1 pt-1">
+                                <div className="space-y-1">
                                   <div className="flex justify-between items-center text-[10px] sm:text-xs">
                                     <span className="font-bold text-gray-500 font-sans">Safety:</span>
-                                    <span className={cn("font-black font-sans text-[10px] sm:text-xs", microbeConfig.textColor)}>
-                                      {microbeConfig.statusText === "Safe" ? "100%" : microbeConfig.statusText === "Warning" ? "50%" : "20%"}
+                                    <span className={cn("font-black font-sans text-[10px] sm:text-xs", microbes.length === 0 ? "text-slate-400" : microbeConfig.textColor)}>
+                                      {microbes.length === 0 ? "—%" : microbeConfig.statusText === "Safe" ? "100%" : microbeConfig.statusText === "Warning" ? "50%" : "20%"}
                                     </span>
                                   </div>
                                   <div className="w-full bg-gray-200/60 rounded-full h-1.5 overflow-hidden">
-                                    <div 
-                                      className={cn("h-full rounded-full transition-all duration-500", microbeConfig.color)} 
-                                      style={{ width: microbeConfig.statusText === "Safe" ? "100%" : microbeConfig.statusText === "Warning" ? "50%" : "20%" }}
+                                    <div
+                                      className={cn("h-full rounded-full transition-all duration-500", microbes.length === 0 ? "bg-slate-400" : microbeConfig.color)}
+                                      style={{ width: microbes.length === 0 ? "100%" : microbeConfig.statusText === "Safe" ? "100%" : microbeConfig.statusText === "Warning" ? "50%" : "20%" }}
                                     />
                                   </div>
                                 </div>
-                              </div>
-                              <div className="pt-2 border-t border-gray-100 flex justify-end">
-                                <span className="text-[9px] font-bold text-blue-600 group-hover:text-blue-800 transition-colors flex items-center gap-0.5">
-                                  Details <ChevronRight className="w-3 h-3" />
-                                </span>
+                                <div className="pt-2 border-t border-gray-100 flex justify-end">
+                                  <span className="text-[9px] font-bold text-blue-600 group-hover:text-blue-800 transition-colors flex items-center gap-0.5">
+                                    Click for details! <ChevronRight className="w-3 h-3" />
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
                             {/* Card 2: Heavy Metals and Pollutants */}
-                            <div 
+                            <div
                               onClick={() => setShowMetalsModal(true)}
-                              className="flex flex-col space-y-2.5 p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between"
+                              className="flex flex-col p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
                             >
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2.5">
+                              <div className="flex flex-col flex-grow space-y-2">
+                                <div className="flex items-center gap-2.5 shrink-0">
                                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-sm group-hover:scale-105 transition-transform duration-200">
                                     <FlaskConical className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
                                   </div>
                                   <div>
                                     <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">
-                                      <DefinitionLink term="Heavy Metals">
-                                        Heavy Metals and Pollutants
-                                      </DefinitionLink>
+                                      Heavy Metals and Pollutants
                                     </h4>
                                   </div>
                                 </div>
-                                <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium">
-                                  {chemicals.length === 0 && additives.length === 0
-                                    ? "No chemical or additive data available." 
-                                    : chemicalConfig.statusText === "Safe"
-                                      ? "Lead, arsenic, and treatment additive levels meet safety guidelines."
-                                      : chemicalConfig.statusText === "Warning"
-                                        ? "Elevated levels detected for some chemical/treatment parameters."
-                                        : "Critical exceedance of heavy metal or chemical limits."}
-                                </p>
+                                <div className="flex-grow min-h-[40px] sm:min-h-[48px]">
+                                  <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium">
+                                    {chemicals.length === 0 && additives.length === 0
+                                      ? "No chemical or additive data available."
+                                      : chemicalConfig.statusText === "Safe"
+                                        ? "Lead, arsenic, and treatment additive levels meet safety guidelines."
+                                        : chemicalConfig.statusText === "Warning"
+                                          ? "Elevated levels detected for some chemical/treatment parameters."
+                                          : "Critical exceedance of heavy metal or chemical limits."}
+                                  </p>
+                                </div>
+                              </div>
 
+                              <div className="flex flex-col justify-end mt-auto pt-2 space-y-3">
                                 {/* Safety Bar */}
-                                <div className="space-y-1 pt-1">
+                                <div className="space-y-1">
                                   <div className="flex justify-between items-center text-[10px] sm:text-xs">
                                     <span className="font-bold text-gray-500 font-sans">Safety:</span>
-                                    <span className={cn("font-black font-sans text-[10px] sm:text-xs", chemicalConfig.textColor)}>
-                                      {chemicalConfig.statusText === "Safe" ? "100%" : chemicalConfig.statusText === "Warning" ? "50%" : "20%"}
+                                    <span className={cn("font-black font-sans text-[10px] sm:text-xs", (chemicals.length === 0 && additives.length === 0) ? "text-slate-400" : chemicalConfig.textColor)}>
+                                      {(chemicals.length === 0 && additives.length === 0) ? "—%" : chemicalConfig.statusText === "Safe" ? "100%" : chemicalConfig.statusText === "Warning" ? "50%" : "20%"}
                                     </span>
                                   </div>
                                   <div className="w-full bg-gray-200/60 rounded-full h-1.5 overflow-hidden">
-                                    <div 
-                                      className={cn("h-full rounded-full transition-all duration-500", chemicalConfig.color)} 
-                                      style={{ width: chemicalConfig.statusText === "Safe" ? "100%" : chemicalConfig.statusText === "Warning" ? "50%" : "20%" }}
+                                    <div
+                                      className={cn("h-full rounded-full transition-all duration-500", (chemicals.length === 0 && additives.length === 0) ? "bg-slate-400" : chemicalConfig.color)}
+                                      style={{ width: (chemicals.length === 0 && additives.length === 0) ? "100%" : chemicalConfig.statusText === "Safe" ? "100%" : chemicalConfig.statusText === "Warning" ? "50%" : "20%" }}
                                     />
                                   </div>
                                 </div>
-                              </div>
-                              <div className="pt-2 border-t border-gray-100 flex justify-end">
-                                <span className="text-[9px] font-bold text-blue-600 group-hover:text-blue-800 transition-colors flex items-center gap-0.5">
-                                  Details <ChevronRight className="w-3 h-3" />
-                                </span>
+                                <div className="pt-2 border-t border-gray-100 flex justify-end">
+                                  <span className="text-[9px] font-bold text-blue-600 group-hover:text-blue-800 transition-colors flex items-center gap-0.5">
+                                    Click for details! <ChevronRight className="w-3 h-3" />
+                                  </span>
+                                </div>
                               </div>
                             </div>
 
                             {/* Card 3: Water Hardness & Softeners */}
-                            <div 
+                            <div
                               onClick={() => setShowAestheticModal(true)}
-                              className="flex flex-col space-y-2.5 p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between"
+                              className="flex flex-col p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
                             >
-                              <div className="space-y-2">
-                                {(() => {
-                                  const hasAestheticData = selectedLocation && (selectedLocation.dwsp_data || (hardnessInfo && hardnessInfo.hardness > 0));
-                                  return (
-                                    <>
-                                      <div className="flex items-center gap-2.5">
+                              {(() => {
+                                const hasAestheticData = selectedLocation && (selectedLocation.dwsp_data || (hardnessInfo && hardnessInfo.hardness > 0));
+                                return (
+                                  <>
+                                    <div className="flex flex-col flex-grow space-y-2">
+                                      <div className="flex items-center gap-2.5 shrink-0">
                                         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 shadow-sm group-hover:scale-105 transition-transform duration-200">
                                           <Waves className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
                                         </div>
                                         <div>
                                           <h4 className="text-xs sm:text-sm font-bold text-gray-900 leading-tight">
-                                            <DefinitionLink term="Hardness">
-                                              Hardness & Softeners
-                                            </DefinitionLink>
+                                            Water Hardness
                                           </h4>
                                         </div>
                                       </div>
-                                      
-                                      {hasAestheticData ? (
-                                        <>
+
+                                      <div className="flex-grow min-h-[40px] sm:min-h-[48px]">
+                                        {hasAestheticData ? (
                                           <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium mt-1">
                                             {hardnessInfo.statusText === "Very Hard Water" ? (
                                               "Very hard water found due to high minerals."
@@ -2172,53 +2237,66 @@ export function SearchPage() {
                                               "Soft water found due to low mineral levels."
                                             )}
                                           </p>
+                                        ) : (
+                                          <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium mt-1">
+                                            No hardness data was found.
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
 
-                                          {/* Spectrum Indicator Bar */}
-                                          <div className="space-y-1 mt-2.5">
-                                            <div className="flex justify-between text-[7px] sm:text-[8px] font-bold text-slate-400">
-                                              <span>Hardness Spectrum</span>
-                                              <span>{hardnessInfo.hardness.toFixed(0)} mg/L</span>
-                                            </div>
-                                            <div className="h-2 w-full rounded-full relative overflow-visible bg-slate-100 flex shadow-inner">
-                                              <div className="h-full rounded-l-full bg-emerald-400" style={{ width: '20%' }} />
-                                              <div className="h-full bg-blue-400" style={{ width: '20%' }} />
-                                              <div className="h-full bg-amber-400" style={{ width: '20%' }} />
-                                              <div className="h-full rounded-r-full bg-red-500" style={{ width: '40%' }} />
-                                              
-                                              {/* Positioned Marker */}
-                                              {(() => {
-                                                const clamped = Math.min(300, Math.max(0, hardnessInfo.hardness));
-                                                const indicatorPct = (clamped / 300) * 100;
-                                                return (
-                                                  <div 
-                                                    className="absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3.5 h-3.5 rounded-full bg-white border-[3px] border-indigo-600 shadow z-10 flex items-center justify-center"
-                                                    style={{ left: `${indicatorPct}%` }}
-                                                  />
-                                                );
-                                              })()}
-                                            </div>
-                                            <div className="flex justify-between text-[7px] font-black uppercase text-slate-400 pt-0.5">
-                                              <span className="text-emerald-600">Soft</span>
-                                              <span className="text-blue-500">Mod</span>
-                                              <span className="text-amber-500">Hard</span>
-                                              <span className="text-red-500">Very Hard</span>
-                                            </div>
+                                    <div className="flex flex-col justify-end mt-auto pt-2 space-y-3">
+                                      {hasAestheticData ? (
+                                        <div className="space-y-1">
+                                          <div className="flex justify-between text-[7px] sm:text-[8px] font-bold text-slate-400">
                                           </div>
-                                        </>
+                                          <div className="h-2 w-full rounded-full relative overflow-visible bg-slate-100 flex shadow-inner">
+                                            <div className="h-full rounded-l-full bg-emerald-400" style={{ width: '20%' }} />
+                                            <div className="h-full bg-blue-400" style={{ width: '20%' }} />
+                                            <div className="h-full bg-amber-400" style={{ width: '20%' }} />
+                                            <div className="h-full rounded-r-full bg-red-500" style={{ width: '40%' }} />
+
+                                            {/* Positioned Marker */}
+                                            {(() => {
+                                              const clamped = Math.min(300, Math.max(0, hardnessInfo.hardness));
+                                              const indicatorPct = (clamped / 300) * 100;
+                                              return (
+                                                <div
+                                                  className="absolute top-1/2 -translate-y-1/2 -ml-1.5 w-3.5 h-3.5 rounded-full bg-white border-[3px] border-indigo-600 shadow z-10 flex items-center justify-center"
+                                                  style={{ left: `${indicatorPct}%` }}
+                                                />
+                                              );
+                                            })()}
+                                          </div>
+                                          <div className="flex justify-between text-[7px] font-black uppercase text-slate-400 pt-0.5">
+                                            <span className="text-emerald-600">Soft</span>
+                                            <span className="text-blue-500">Mod</span>
+                                            <span className="text-amber-500">Hard</span>
+                                            <span className="text-red-500">Very Hard</span>
+                                          </div>
+                                        </div>
                                       ) : (
-                                        <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium">
-                                          No hardness data was found.
-                                        </p>
+                                        <div className="space-y-1 opacity-0 pointer-events-none">
+                                          <div className="flex justify-between text-[7px] sm:text-[8px] font-bold text-slate-400">
+                                            &nbsp;
+                                          </div>
+                                          <div className="h-2 w-full rounded-full relative overflow-visible bg-slate-100 flex shadow-inner">
+                                          </div>
+                                          <div className="flex justify-between text-[7px] font-black uppercase text-slate-400 pt-0.5">
+                                            &nbsp;
+                                          </div>
+                                        </div>
                                       )}
-                                    </>
-                                  );
-                                })()}
-                              </div>
-                              <div className="pt-2 border-t border-gray-100 flex justify-end">
-                                <span className="text-[9px] font-bold text-blue-600 group-hover:text-blue-800 transition-colors flex items-center gap-0.5">
-                                  Details <ChevronRight className="w-3 h-3" />
-                                </span>
-                              </div>
+
+                                      <div className="pt-2 border-t border-gray-100 flex justify-end">
+                                        <span className="text-[9px] font-bold text-blue-600 group-hover:text-blue-800 transition-colors flex items-center gap-0.5">
+                                          Click for details! <ChevronRight className="w-3 h-3" />
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -2240,11 +2318,11 @@ export function SearchPage() {
                               const paramStatus = getParameterStatus(test, isExceeded, limitInfo);
 
                               return (
-                                <div 
+                                <div
                                   key={idx}
                                   className={cn(
                                     "border rounded-xl transition-all overflow-hidden shadow-sm flex flex-col justify-between",
-                                    paramStatus === "Action Required" 
+                                    paramStatus === "Action Required"
                                       ? cn("border-red-200 bg-red-50/5", isExpanded && "ring-2 ring-blue-500/10 border-blue-400")
                                       : paramStatus === "Warning"
                                         ? cn("border-amber-200/60 bg-amber-50/20", isExpanded ? "ring-2 ring-blue-500/10 border-blue-400" : "hover:border-amber-300")
@@ -2252,7 +2330,7 @@ export function SearchPage() {
                                   )}
                                 >
                                   {/* Row Content (Horizontal on all screen sizes) */}
-                                  <div 
+                                  <div
                                     onClick={() => toggleRowExpansion(test.contaminant, test.unit)}
                                     className="p-3 sm:p-4 flex flex-row items-center justify-between gap-4 cursor-pointer select-none"
                                   >
@@ -2260,9 +2338,7 @@ export function SearchPage() {
                                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                                       {getParameterIcon(category)}
                                       <span className="font-bold text-gray-950 text-xs sm:text-sm leading-snug truncate">
-                                        <DefinitionLink term={test.contaminant}>
-                                          {formatParameterName(test.contaminant)}
-                                        </DefinitionLink>
+                                        {formatParameterName(test.contaminant)}
                                       </span>
                                     </div>
 
@@ -2332,16 +2408,26 @@ export function SearchPage() {
                                                   </p>
                                                 </div>
                                                 {isExpandable && (
-                                                 <div className="space-y-1.5 pt-1 col-span-2">
-                                                   <div className="flex justify-between items-center">
-                                                     <span className="text-[8px] sm:text-[10px] uppercase font-bold text-gray-400 tracking-wider">
-                                                       All Samples: {rawSamplesData[rowKey] !== undefined ? rawSamplesData[rowKey].length : "..."}
-                                                     </span>
-                                                   </div>
+                                                  <div className="space-y-1.5 pt-1 col-span-2">
+                                                    <div className="flex justify-between items-center">
+                                                      <span className="text-[8px] sm:text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                                                        All Samples: {rawSamplesData[rowKey] !== undefined ? rawSamplesData[rowKey].length : "..."}
+                                                      </span>
+                                                    </div>
 
-                                                   {renderSampleHistory(rowKey, test, precision)}
-                                                 </div>
+                                                    {renderSampleHistory(rowKey, test, precision)}
+                                                  </div>
                                                 )}
+                                              </div>
+
+                                              {/* Learn More link at the bottom of the expanded detail area */}
+                                              <div className="pt-1.5 flex justify-end">
+                                                <Link
+                                                  to={`/education#${getSlug(test.contaminant)}`}
+                                                  className="inline-flex items-center gap-0.5 text-[10px] sm:text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                                                >
+                                                  Learn More <ChevronRight className="w-3.5 h-3.5" />
+                                                </Link>
                                               </div>
                                             </div>
                                           );
@@ -2475,7 +2561,7 @@ export function SearchPage() {
                             </div>
                             <span className={cn(
                               "inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0 sm:self-start self-start",
-                              primaryRec.primary.includes("Reverse Osmosis") 
+                              primaryRec.primary.includes("Reverse Osmosis")
                                 ? "bg-purple-50 text-purple-700 border-purple-200"
                                 : primaryRec.primary.includes("Carbon")
                                   ? "bg-green-50 text-green-700 border-green-200"
@@ -2565,84 +2651,78 @@ export function SearchPage() {
                             )}
                           </div>
 
-                          {/* Grid of contaminant cards */}
+                          {/* List of contaminants */}
                           <div className="relative">
-                            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+                            <div className="flex flex-col divide-y divide-gray-100 border-t border-b border-gray-100 py-1">
                               {detectedParams.length === 0 ? (
-                                <div className="col-span-full py-4 text-center text-xs text-gray-400 font-medium">
+                                <div className="py-4 text-left text-xs text-gray-400 font-medium">
                                   No contaminants detected in trace or exceeded amounts.
                                 </div>
                               ) : (
                                 (showAllContaminants ? detectedParams : detectedParams.slice(0, isMobile ? 4 : 8)).map((param, pIdx) => {
-                                const limitInfo = getOntarioLimitInfo(param.contaminant, param.level, param.unit, param.exceedanceCount || 0, param.parameterLimit);
-                                const isExceeded = limitInfo ? limitInfo.isExceeded : (param.exceedanceCount && param.exceedanceCount > 0);
-                                const filterTarget = getContaminantFilterTarget(param.contaminant);
+                                  const limitInfo = getOntarioLimitInfo(param.contaminant, param.level, param.unit, param.exceedanceCount || 0, param.parameterLimit);
+                                  const isExceeded = limitInfo ? limitInfo.isExceeded : (param.exceedanceCount && param.exceedanceCount > 0);
+                                  const filterTarget = getContaminantFilterTarget(param.contaminant);
+                                  const precision = getParameterPrecision(param);
+                                  const detectedVal = param.maxLevel !== undefined && param.maxLevel !== null ? param.maxLevel : param.level;
+                                  const detectedText = formatLevel(detectedVal, param.unit, param.exceedanceCount || 0, precision);
+                                  const limitTextVal = limitInfo ? formatLimitText(limitInfo.limitText, precision) : (param.legalLimit > 0 ? `${param.legalLimit.toFixed(precision)} ${formatUnitForDisplay(param.unit)}` : "No regulated limit");
 
-                                return (
-                                  <motion.div
-                                    layout
-                                    key={pIdx}
-                                    className={cn(
-                                      "border rounded-xl p-3 select-none shadow-sm flex flex-col justify-center",
-                                      isExceeded
-                                        ? "border-red-200 bg-red-50/10"
-                                        : "border-yellow-200/50 bg-yellow-50/10",
-                                      "sm:aspect-square sm:text-center"
-                                    )}
-                                  >
-                                    <div className="flex flex-col w-full text-left sm:items-center sm:text-center gap-1.5 sm:gap-2">
-                                      {/* Contaminant Name */}
-                                      <span className={cn(
-                                        "font-extrabold text-[11px] sm:text-base leading-snug truncate sm:whitespace-normal sm:line-clamp-2",
-                                        isExceeded ? "text-red-600" : "text-amber-600"
-                                      )}>
-                                        {formatParameterName(param.contaminant)}
+                                  return (
+                                    <motion.div
+                                      layout
+                                      key={pIdx}
+                                      className="py-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm text-gray-700 font-sans text-left"
+                                    >
+                                      <span className="shrink-0">{isExceeded ? "⚠️" : "ℹ️"}</span>
+                                      <span className="font-extrabold text-gray-900">{formatParameterName(param.contaminant)}</span>
+                                      <span className="text-gray-400">—</span>
+                                      <span className="text-gray-600">
+                                        Detected: <span className="font-mono font-bold text-gray-950">{detectedText}</span>{" "}
+                                        <span className="text-gray-400">({limitInfo ? `Limit: ${limitTextVal}` : "No regulated limit"})</span>
                                       </span>
-
-                                      {/* Recommended Filter (bold) */}
-                                      <span className="font-bold text-[10px] sm:text-sm text-blue-600">
-                                        {filterTarget}
+                                      <span className="text-gray-300">|</span>
+                                      <span className="text-gray-600">
+                                        Required: <span className="font-bold text-blue-600">{filterTarget}</span>
                                       </span>
-
-                                      {/* Reason (small text below) */}
-                                      <span className="text-[9px] sm:text-xs text-gray-500 font-medium leading-tight">
-                                        {getFilterActionDescription(filterTarget)}
+                                      <span className="text-gray-300">|</span>
+                                      <span className="text-gray-500 font-medium">
+                                        {getFilterActionDescription(filterTarget, param.contaminant)}
                                       </span>
-                                    </div>
-                                  </motion.div>
-                                );
-                              })
-                            )}
-                          </div>
-
-                          {/* Pagination controls for Contaminants grid */}
-                          {detectedParams.length > (isMobile ? 4 : 8) && (
-                            <div className="flex justify-center mt-4">
-                              {showAllContaminants ? (
-                                <button
-                                  onClick={() => setShowAllContaminants(false)}
-                                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
-                                >
-                                  Show Less <ChevronDown className="w-3.5 h-3.5 rotate-180" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setShowAllContaminants(true)}
-                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer"
-                                >
-                                  {isMobile ? (
-                                    <>Show More <ChevronDown className="w-3.5 h-3.5" /></>
-                                  ) : (
-                                    <>Show All ({detectedParams.length}) <ChevronDown className="w-3.5 h-3.5" /></>
-                                  )}
-                                </button>
+                                    </motion.div>
+                                  );
+                                })
                               )}
                             </div>
-                          )}
-                        </div>
-                      </div>
 
-                      {/* Cross-link to Filter Guide */}
+                            {/* Pagination controls for Contaminants grid */}
+                            {detectedParams.length > (isMobile ? 4 : 8) && (
+                              <div className="flex justify-center mt-4">
+                                {showAllContaminants ? (
+                                  <button
+                                    onClick={() => setShowAllContaminants(false)}
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
+                                  >
+                                    Show Less <ChevronDown className="w-3.5 h-3.5 rotate-180" />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => setShowAllContaminants(true)}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full text-xs font-bold flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer"
+                                  >
+                                    {isMobile ? (
+                                      <>Show More <ChevronDown className="w-3.5 h-3.5" /></>
+                                    ) : (
+                                      <>Show All ({detectedParams.length}) <ChevronDown className="w-3.5 h-3.5" /></>
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Cross-link to Filter Guide */}
                         <div className="pt-3 px-1 text-center sm:text-left">
                           <p className="text-xs sm:text-sm text-gray-500 font-medium">
                             Learn more about how these systems work in our <a href="/filters" className="text-blue-600 font-semibold hover:text-blue-800 underline">Filter Guide</a>.
@@ -2652,19 +2732,19 @@ export function SearchPage() {
                     );
                   })()
                 ))}
-              </div>
+            </div>
 
-              {/* Return to Results (bottom) */}
-              <div className="text-center pt-2">
-                <button
-                  onClick={() => { navigate(`/search/${encodeURIComponent(routeQuery || searchTerm)}`); setDetailTab('quality'); }}
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" /> Return to Results
-                </button>
-              </div>
-            </motion.div>
-          )}
+            {/* Return to Results (bottom) */}
+            <div className="text-center pt-2">
+              <button
+                onClick={() => { navigate(`/search/${encodeURIComponent(routeQuery || searchTerm)}`); setDetailTab('quality'); }}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Return to Results
+              </button>
+            </div>
+          </motion.div>
+        )}
 
         {/* Initial empty state */}
         {!hasSearched && !selectedLocation && (
@@ -2728,9 +2808,7 @@ export function SearchPage() {
                         <Microscope className="w-5 h-5" />
                       </div>
                       <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm leading-tight">
-                        <DefinitionLink term="Microbes">
-                          Biological Status
-                        </DefinitionLink>
+                        Biological Status
                       </h4>
                     </div>
                     <span className={cn(
@@ -2847,9 +2925,7 @@ export function SearchPage() {
                         <FlaskConical className="w-5 h-5" />
                       </div>
                       <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm leading-tight">
-                        <DefinitionLink term="Heavy Metals">
-                          Toxic Metals & Runoff
-                        </DefinitionLink>
+                        Toxic Metals & Runoff
                       </h4>
                     </div>
                     <span className={cn(
@@ -2903,9 +2979,7 @@ export function SearchPage() {
                         <Sparkles className="w-5 h-5" />
                       </div>
                       <h4 className="font-extrabold text-slate-800 text-xs sm:text-sm leading-tight">
-                        <DefinitionLink term="Fluoride">
-                          Disinfection & Additives
-                        </DefinitionLink>
+                        Disinfection & Additives
                       </h4>
                     </div>
                     <span className={cn(
@@ -3020,17 +3094,17 @@ export function SearchPage() {
                       const hardness = hardnessInfo.hardness;
                       const status = hardnessInfo.statusText;
                       const hardnessStatusText = (status === "Hard Water" || status === "Very Hard Water") ? "Attention Required" : "Safe";
-                      
+
                       let badgeColors = "bg-emerald-100 text-emerald-800 border-emerald-200";
                       let circleBgAndText = "bg-emerald-50 text-emerald-600";
                       let iconColor = "text-emerald-600";
-                      
+
                       if (hardnessStatusText === "Attention Required") {
                         badgeColors = "bg-red-100 text-red-800 border-red-200";
                         circleBgAndText = "bg-red-50 text-red-600";
                         iconColor = "text-red-600";
                       }
-                      
+
                       return (
                         <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col space-y-4">
                           <div className="flex items-center justify-between gap-2">
@@ -3044,7 +3118,7 @@ export function SearchPage() {
                               {hardnessStatusText} ({status})
                             </span>
                           </div>
-                          
+
                           <div className="space-y-4 text-left">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
@@ -3077,7 +3151,7 @@ export function SearchPage() {
                     {(() => {
                       const hardness = hardnessInfo.hardness;
                       const status = hardnessInfo.statusText;
-                      
+
                       // 1. Soft Water Effects (hardness <= 60)
                       if (status === "Soft Water" || hardness <= 60) {
                         return (
@@ -3120,7 +3194,7 @@ export function SearchPage() {
                           </div>
                         );
                       }
-                      
+
                       // 2. Moderately Hard Water Effects (60 < hardness <= 120)
                       if (status === "Moderately Hard" || (hardness > 60 && hardness <= 120)) {
                         return (
@@ -3163,7 +3237,7 @@ export function SearchPage() {
                           </div>
                         );
                       }
-                      
+
                       // 3. Very Hard Water Effects (hardness > 180)
                       if (status === "Very Hard Water" || hardness > 180) {
                         return (
@@ -3206,7 +3280,7 @@ export function SearchPage() {
                           </div>
                         );
                       }
-                      
+
                       // 4. Default: Hard Water (120 < hardness <= 180)
                       return (
                         <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col space-y-4">

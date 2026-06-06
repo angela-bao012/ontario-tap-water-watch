@@ -2,12 +2,40 @@ import { useState, useMemo, useEffect } from "react";
 import { motion } from "motion/react";
 import { Info, Droplets, Waves, Shield, AlertTriangle, Beaker, TrendingUp, Search, X, ArrowUpDown, Settings, Droplet, Filter } from "lucide-react";
 
+export function getSlug(term: string): string {
+  let slug = term.toLowerCase()
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\s*&\s*/g, "-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  if (slug === "escherichia-coli" || slug === "e-coli" || slug === "total-coliform" || slug === "coliform") {
+    return "microbes";
+  }
+  if (slug === "nitrate-nitrite" || slug === "nitrate-nitrite-as-nitrogen" || slug === "nitrate-as-nitrogen" || slug === "nitrite-as-nitrogen") {
+    return "nitrate";
+  }
+  if (slug === "trihalomethane" || slug === "trihalomethanes" || slug === "trihalomethanes-total" || slug === "trihalomethanes-thms") {
+    return "trihalomethanes-thms";
+  }
+  if (slug === "haloacetic" || slug === "total-haloacetic-acids" || slug === "haloacetic-acids" || slug === "haloacetic-acids-haas") {
+    return "haloacetic-acids-haas";
+  }
+  if (slug === "calcium-magnesium") {
+    return "calcium-magnesium";
+  }
+  if (["hardness", "iron", "manganese", "aluminum", "zinc", "ph", "sodium", "turbidity"].includes(slug)) {
+    return "hardness";
+  }
+  return slug;
+}
+
 // Expanded minerals list covering contaminants from Ontario water reports
 const minerals = [
   {
     name: "Calcium & Magnesium",
     category: "Essential Mineral",
-    description: "Minerals that make water hard. They can leave crusty white stains on pipes and faucets, but they are completely safe and actually healthy to drink.",
+    description: "Minerals that make water hard. They can leave crusty white stains on pipes and faucets, but they are completely safe and healthy to drink.",
     commonSources: "Groundwater flowing through limestone rock.",
   },
   {
@@ -160,6 +188,342 @@ const minerals = [
     description: "Microscopic bacteria that can indicate contamination from soil, surface water, or sewage. High levels can cause intestinal issues.",
     commonSources: "Soil, surface water, or sewage.",
   },
+  {
+    name: "1,1-Dichloroethylene (vinylidene chloride)",
+    category: "Health Concern",
+    description: "An industrial chemical used to make plastic wrap and adhesives. Regulated strictly to prevent liver and kidney damage.",
+    commonSources: "Industrial plastic manufacturing discharge."
+  },
+  {
+    name: "1,2-Dichlorobenzene",
+    category: "Health Concern",
+    description: "A chemical used in industrial solvents, dyes, and paints. High levels can affect the liver and nervous system.",
+    commonSources: "Industrial chemical factories and solvent releases."
+  },
+  {
+    name: "1,2-Dichloroethane",
+    category: "Health Concern",
+    description: "A solvent used to make PVC pipes. It is regulated in drinking water because long-term exposure can raise cancer risk.",
+    commonSources: "Industrial factory discharge and plastic manufacturing."
+  },
+  {
+    name: "1,4-Dichlorobenzene",
+    category: "Health Concern",
+    description: "A chemical compound used in deodorizers and plastics. Long-term exposure can cause liver and kidney damage.",
+    commonSources: "Industrial emissions or sewer deodorizer runoff."
+  },
+  {
+    name: "2,3,4,6-Tetrachlorophenol",
+    category: "Health Concern",
+    description: "A chemical compound historically used as a wood preservative. Regulated in water systems due to toxicity concerns.",
+    commonSources: "Wood preservation facilities and industrial runoff."
+  },
+  {
+    name: "2,4,6-Trichlorophenol",
+    category: "Health Concern",
+    description: "A chemical byproduct used in pesticides and wood preservatives. Long-term consumption can increase cancer risk.",
+    commonSources: "Pesticide manufacturers or chemical byproducts."
+  },
+  {
+    name: "2,4-Dichlorophenol",
+    category: "Health Concern",
+    description: "A chemical compound used to make pesticides. High levels can cause kidney and liver issues.",
+    commonSources: "Chemical factory runoff and pesticide degradation."
+  },
+  {
+    name: "Alachlor",
+    category: "Pesticide",
+    description: "An agricultural herbicide used to control weeds in corn and soy crops. Strictly regulated due to potential health effects.",
+    commonSources: "Agricultural field runoff."
+  },
+  {
+    name: "Aluminum",
+    category: "Essential Mineral",
+    description: "A natural metal in the environment. High levels can discolor water or give it a metallic taste.",
+    commonSources: "Natural rocks, soil, or water treatment plants."
+  },
+  {
+    name: "Azinphos-methyl",
+    category: "Pesticide",
+    description: "An organophosphate insecticide. Monitored strictly in water to ensure levels remain safe for public consumption.",
+    commonSources: "Runoff from agricultural orchards."
+  },
+  {
+    name: "Benzo(a)pyrene",
+    category: "Health Concern",
+    description: "A byproduct of incomplete combustion of organic materials like coal tar or fuel. Strictly regulated due to high toxicity and cancer risk.",
+    commonSources: "Industrial emissions, line coatings, or road runoff."
+  },
+  {
+    name: "Bromate",
+    category: "Byproduct",
+    description: "A chemical byproduct formed when ozone used for water treatment reacts with natural bromide. High levels can increase cancer risk.",
+    commonSources: "Disinfection treatment byproduct."
+  },
+  {
+    name: "Bromide",
+    category: "Essential Mineral",
+    description: "A naturally occurring salt found in groundwater. It is harmless on its own but can form toxic byproducts during disinfection.",
+    commonSources: "Deep groundwater deposits."
+  },
+  {
+    name: "Bromoxynil",
+    category: "Pesticide",
+    description: "A pesticide used to control weeds in grain crops. Monitored closely in agricultural regions to protect tap water safety.",
+    commonSources: "Agricultural crop spraying runoff."
+  },
+  {
+    name: "Carbaryl",
+    category: "Pesticide",
+    description: "A common insecticide used to control insects on crops and lawns. Levels in drinking water are kept well below safety limits.",
+    commonSources: "Crop protection runoff and lawn care."
+  },
+  {
+    name: "Carbofuran",
+    category: "Pesticide",
+    description: "A toxic insecticide used on various agricultural crops. Strictly regulated in Ontario to protect drinking water sources.",
+    commonSources: "Agricultural soil treatment runoff."
+  },
+  {
+    name: "Carbon tetrachloride",
+    category: "Health Concern",
+    description: "A toxic solvent once widely used in cleaning agents. Banned in household items, it is monitored to prevent liver and kidney issues.",
+    commonSources: "Industrial solvent disposal and chemical plants."
+  },
+  {
+    name: "Chlorate",
+    category: "Byproduct",
+    description: "A byproduct formed during water disinfection when using chlorine dioxide or sodium hypochlorite. Regulated to protect red blood cells.",
+    commonSources: "Water purification disinfection byproduct."
+  },
+  {
+    name: "Chlorite",
+    category: "Byproduct",
+    description: "A byproduct of water treatment disinfection using chlorine dioxide. Strictly monitored to prevent nervous system issues.",
+    commonSources: "Disinfection of public drinking water."
+  },
+  {
+    name: "Chlorpyrifos",
+    category: "Pesticide",
+    description: "An insecticide used in farming and greenhouses. Ontario monitors its levels closely to prevent nervous system risks.",
+    commonSources: "Agricultural insecticide application."
+  },
+  {
+    name: "Diazinon",
+    category: "Pesticide",
+    description: "An agricultural insecticide. Ontario regulates its presence to ensure levels stay safe for public use.",
+    commonSources: "Lawn, garden, and crop insecticide runoff."
+  },
+  {
+    name: "Dicamba",
+    category: "Pesticide",
+    description: "A herbicide used to control broadleaf weeds. Levels are monitored to protect water quality in agricultural zones.",
+    commonSources: "Broadleaf weed control on farms."
+  },
+  {
+    name: "Dichloromethane",
+    category: "Health Concern",
+    description: "An organic solvent used in paint strippers and metal cleaning. Regulated strictly in drinking water due to potential health risks.",
+    commonSources: "Industrial paint strippers and factory solvents."
+  },
+  {
+    name: "Diclofop-methyl",
+    category: "Pesticide",
+    description: "A selective herbicide used to control wild oats and annual grassy weeds. Regulated to ensure safety.",
+    commonSources: "Agricultural field application."
+  },
+  {
+    name: "Dimethoate",
+    category: "Pesticide",
+    description: "An organophosphate insecticide used on agricultural crops. Monitored strictly in drinking water systems.",
+    commonSources: "Runoff from agricultural crop spraying."
+  },
+  {
+    name: "Dioxin and furan",
+    category: "Health Concern",
+    description: "Highly toxic industrial byproducts of combustion and chemical manufacturing. Strictly regulated at extremely low levels.",
+    commonSources: "Industrial incineration and waste incineration."
+  },
+  {
+    name: "Diquat",
+    category: "Pesticide",
+    description: "A fast-acting herbicide used to control aquatic weeds. Regulated to prevent liver and kidney issues.",
+    commonSources: "Aquatic weed control runoff."
+  },
+  {
+    name: "Dissolved Organic Carbon",
+    category: "Essential Mineral",
+    description: "Organic carbon compounds dissolved in water from decaying leaves and plants. Harmless on its own but can form byproducts.",
+    commonSources: "Natural organic decay in surface water sources."
+  },
+  {
+    name: "Diuron",
+    category: "Pesticide",
+    description: "A herbicide used for weed control in agricultural and non-crop areas. Regulated to ensure safety.",
+    commonSources: "Industrial vegetation control and farming."
+  },
+  {
+    name: "Gross Alpha",
+    category: "Health Concern",
+    description: "Alpha particle radiation from natural radioactive minerals in deep rocks. Monitored to prevent long-term cancer risks.",
+    commonSources: "Deep underground rock formations."
+  },
+  {
+    name: "Gross Beta",
+    category: "Health Concern",
+    description: "Beta particle radiation from natural and man-made radioactive minerals. Regulated to ensure public safety.",
+    commonSources: "Natural radioactive deposits or industrial emissions."
+  },
+  {
+    name: "Iron",
+    category: "Essential Mineral",
+    description: "A common natural metal in groundwater. It is harmless to health but can discolor water and leave red-brown stains.",
+    commonSources: "Natural soil deposits or corroding pipes."
+  },
+  {
+    name: "MCPA",
+    category: "Pesticide",
+    description: "A herbicide used to control broadleaf weeds in crops and turf. Monitored regularly to ensure water remains safe.",
+    commonSources: "Pasture and agricultural field runoff."
+  },
+  {
+    name: "Malathion",
+    category: "Pesticide",
+    description: "A widely used insecticide for farming and mosquito control. Regulated in water to ensure levels stay safe.",
+    commonSources: "Mosquito control spraying or agricultural runoff."
+  },
+  {
+    name: "Manganese",
+    category: "Essential Mineral",
+    description: "A naturally occurring mineral. Harmless in small amounts, but high levels can leave black stains and affect water taste.",
+    commonSources: "Natural soil deposits or groundwater erosion."
+  },
+  {
+    name: "Metolachlor",
+    category: "Pesticide",
+    description: "A herbicide used on corn, soybeans, and other crops. Regularly monitored in drinking water sources.",
+    commonSources: "Agricultural crop herbicide runoff."
+  },
+  {
+    name: "Metribuzin",
+    category: "Pesticide",
+    description: "A herbicide used to control weeds in potato, tomato, and soybean crops. Regulated to protect drinking water.",
+    commonSources: "Agricultural crop protection runoff."
+  },
+  {
+    name: "Microcystin",
+    category: "Health Concern",
+    description: "A natural toxin produced by blue-green algae blooms. Highly toxic to the liver; strictly monitored during warm seasons.",
+    commonSources: "Warm-weather blue-green algae blooms in lakes."
+  },
+  {
+    name: "Monochlorobenzene",
+    category: "Health Concern",
+    description: "An industrial solvent and chemical intermediate. High levels can affect the liver, kidneys, and nervous system.",
+    commonSources: "Chemical manufacturing and solvent waste."
+  },
+  {
+    name: "O-Phosphate",
+    category: "Essential Mineral",
+    description: "Orthophosphate is added to water systems to coat pipes and prevent lead from leaching into tap water.",
+    commonSources: "Added at municipal water treatment plants."
+  },
+  {
+    name: "Organic Carbon",
+    category: "Essential Mineral",
+    description: "Total organic carbon from natural vegetation decay. Indicates general biological activity and organic content.",
+    commonSources: "Natural plants and organic material decay."
+  },
+  {
+    name: "Paraquat",
+    category: "Pesticide",
+    description: "A highly toxic agricultural herbicide. Regulated strictly to prevent accidental exposure and protect water safety.",
+    commonSources: "Agricultural field weed control runoff."
+  },
+  {
+    name: "Pentachlorophenol",
+    category: "Health Concern",
+    description: "A heavy-duty wood preservative chemical. Regulated strictly in drinking water due to high toxicity.",
+    commonSources: "Wood treatment facilities and chemical spills."
+  },
+  {
+    name: "Phorate",
+    category: "Pesticide",
+    description: "A highly toxic organophosphate insecticide used on agricultural crops. Monitored strictly to prevent health risks.",
+    commonSources: "Agricultural soil treatment runoff."
+  },
+  {
+    name: "Picloram",
+    category: "Pesticide",
+    description: "A herbicide used to control woody plants and broadleaf weeds. Monitored closely in farming regions.",
+    commonSources: "Agricultural field application."
+  },
+  {
+    name: "Prometryne",
+    category: "Pesticide",
+    description: "A selective herbicide used for weed control. Regulated in Ontario to ensure levels stay within safety limits.",
+    commonSources: "Crop herbicide runoff."
+  },
+  {
+    name: "Simazine",
+    category: "Pesticide",
+    description: "A herbicide used to control weeds in crop and non-crop areas. Regulated to protect public drinking water.",
+    commonSources: "Agricultural weed control runoff."
+  },
+  {
+    name: "Sulphide",
+    category: "Essential Mineral",
+    description: "A natural compound that can give water a 'rotten egg' smell. Harmless to health but aesthetically unpleasant.",
+    commonSources: "Natural underground geologic formations."
+  },
+  {
+    name: "Terbufos",
+    category: "Pesticide",
+    description: "A toxic soil insecticide used on agricultural crops. Regulated strictly to keep drinking water safe.",
+    commonSources: "Farming soil insecticide runoff."
+  },
+  {
+    name: "Tetrachloroethylene (perchloroethylene)",
+    category: "Health Concern",
+    description: "A dry-cleaning solvent and industrial degreaser. Regulated strictly to prevent liver damage and cancer risk.",
+    commonSources: "Dry cleaners and industrial waste."
+  },
+  {
+    name: "Toluene",
+    category: "Health Concern",
+    description: "An industrial chemical found in gasoline and solvents. High levels can cause nervous system and kidney issues.",
+    commonSources: "Industrial petroleum product discharge."
+  },
+  {
+    name: "Triallate",
+    category: "Pesticide",
+    description: "A herbicide used to control wild oats in cereal crops. Monitored regularly in agricultural water supplies.",
+    commonSources: "Cereal crop herbicide runoff."
+  },
+  {
+    name: "Trichloroethylene",
+    category: "Health Concern",
+    description: "A toxic solvent used as a metal degreaser. Regulated strictly in drinking water to prevent cancer risk.",
+    commonSources: "Industrial factory degreasing waste."
+  },
+  {
+    name: "Trifluralin",
+    category: "Pesticide",
+    description: "A widely used herbicide. Ontario monitors it to make sure agricultural runoff does not affect drinking water.",
+    commonSources: "Runoff from farming field weed control."
+  },
+  {
+    name: "Tritium",
+    category: "Health Concern",
+    description: "A radioactive isotope of hydrogen, naturally occurring or from nuclear facilities. Ontario regulates it strictly.",
+    commonSources: "Nuclear power plants or natural reactions."
+  },
+  {
+    name: "Zinc",
+    category: "Essential Mineral",
+    description: "An essential trace mineral. Beneficial in small amounts, but high levels cause metallic taste and cloudy water.",
+    commonSources: "Natural rocks or corroded galvanized pipes."
+  }
 ];
 
 function highlightMatchedText(text: string, search: string): React.ReactNode {
@@ -263,7 +627,7 @@ export function EducationPage() {
       const cleanHash = hash.substring(1).toLowerCase();
       // Check if cleanHash matches any mineral name (slugified)
       const matchedMineral = minerals.find(m =>
-        m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === cleanHash
+        getSlug(m.name) === cleanHash
       );
 
       if (hash === "#hardness" || hash === "#softener") {
@@ -289,7 +653,7 @@ export function EducationPage() {
       } else if (matchedMineral) {
         setSelectedCategory("All");
         setSearchTerm("");
-        targetId = matchedMineral.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        targetId = getSlug(matchedMineral.name);
       } else {
         targetId = hash.substring(1);
       }
@@ -400,19 +764,23 @@ export function EducationPage() {
               <div className="space-y-3">
                 <div>
                   <h5 className="text-xs font-black text-slate-800 flex items-center gap-1.5 mb-0.5">
-                    <Droplet className="w-3.5 h-3.5 text-indigo-600 shrink-0" /> Water Softener Impacts
+                    <Droplet className="w-3.5 h-3.5 text-indigo-600 shrink-0" /> What a Softener Does
                   </h5>
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    Water softeners use an ion exchange process to replace hardness minerals (calcium and magnesium) with sodium ions. Softened water reduces scaling on appliances and pipes but will contain higher sodium levels, which is a dietary consideration.
+                  <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                    Water softeners remove hard minerals (like calcium) so your appliances stay clean. However, they do this by adding small amounts of <strong>sodium (salt)</strong> to your tap water.
                   </p>
                 </div>
                 <div>
                   <h5 className="text-xs font-black text-slate-800 flex items-center gap-1.5 mb-0.5">
-                    <Filter className="w-3.5 h-3.5 text-indigo-600 shrink-0" /> Filtration Guidance
+                    <Filter className="w-3.5 h-3.5 text-indigo-600 shrink-0" /> What to Do If You Have One
                   </h5>
-                  <p className="text-xs text-gray-600 leading-relaxed">
-                    If you have a water softener, it is recommended to maintain a separate unsoftened bypass line for drinking and cooking water. Alternatively, you can use a Reverse Osmosis (RO) filter at your kitchen sink to remove the added sodium and other residual chemicals.
+                  <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">
+                    Softened water isn't ideal for drinking or cooking. If you use a softener, we recommend two simple workarounds:
                   </p>
+                  <ul className="text-xs text-gray-600 list-disc pl-4 mt-1 space-y-1">
+                    <li><strong>Bypass Line:</strong> Keep one kitchen tap on normal, unsoftened water for drinking.</li>
+                    <li><strong>RO Filter:</strong> Install a Reverse Osmosis system under your sink to strip out the added salt.</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -513,8 +881,8 @@ export function EducationPage() {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer select-none ${isSelected
-                      ? "bg-blue-600 text-white shadow-sm"
-                      : "bg-white hover:bg-gray-100 text-gray-600 border border-gray-200/60"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-white hover:bg-gray-100 text-gray-600 border border-gray-200/60"
                     }`}
                 >
                   {cat}
@@ -551,19 +919,19 @@ export function EducationPage() {
               <motion.div
                 layout
                 key={m.name}
-                id={m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                id={getSlug(m.name)}
                 whileHover={{ y: -2 }}
-                className={`bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between ${activeHash.substring(1).toLowerCase() === m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-                    ? "border-blue-500 ring-4 ring-blue-500/20 shadow-lg scale-[1.02] bg-gradient-to-br from-blue-50/10 to-white"
-                    : "border-gray-100 hover:border-gray-200"
+                className={`bg-white p-4 sm:p-5 rounded-xl sm:rounded-2xl border shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between ${activeHash.substring(1).toLowerCase() === getSlug(m.name)
+                  ? "border-blue-500 ring-4 ring-blue-500/20 shadow-lg scale-[1.02] bg-gradient-to-br from-blue-50/10 to-white"
+                  : "border-gray-100 hover:border-gray-200"
                   }`}
               >
                 <div>
                   <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full self-start ${m.category === 'Health Concern' ? 'bg-red-50 text-red-600' :
-                      m.category === 'Byproduct' ? 'bg-orange-50 text-orange-600' :
-                        m.category === 'Pesticide' ? 'bg-yellow-50 text-yellow-700' :
-                          m.category === 'Treatment Agent' ? 'bg-blue-50 text-blue-600' :
-                            'bg-green-50 text-green-600'
+                    m.category === 'Byproduct' ? 'bg-orange-50 text-orange-600' :
+                      m.category === 'Pesticide' ? 'bg-yellow-50 text-yellow-700' :
+                        m.category === 'Treatment Agent' ? 'bg-blue-50 text-blue-600' :
+                          'bg-green-50 text-green-600'
                     }`}>
                     {m.category}
                   </span>

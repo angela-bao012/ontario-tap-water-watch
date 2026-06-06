@@ -974,6 +974,7 @@ export function SearchPage() {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [rawSamplesData, setRawSamplesData] = useState<Record<string, any[]>>({});
   const [rawSamplesLoading, setRawSamplesLoading] = useState<Record<string, boolean>>({});
+  const [sampleSortOrder, setSampleSortOrder] = useState<Record<string, 'date' | 'highest'>>({});
   const [showAllParameters, setShowAllParameters] = useState(false);
   const [showAllContaminants, setShowAllContaminants] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -1354,9 +1355,23 @@ export function SearchPage() {
     }
 
     if (rawSamplesData[rowKey].length > 0) {
+      const sortOrder = sampleSortOrder[rowKey] || 'date';
+      const sortedSamples = [...rawSamplesData[rowKey]].sort((a, b) => {
+        if (sortOrder === 'highest') {
+          const valA = a.result_value !== null ? a.result_value : 0;
+          const valB = b.result_value !== null ? b.result_value : 0;
+          if (valB !== valA) {
+            return valB - valA;
+          }
+        }
+        const dateA = new Date(a.sample_date).getTime();
+        const dateB = new Date(b.sample_date).getTime();
+        return dateB - dateA;
+      });
+
       return (
         <div className="space-y-1 sm:space-y-1.5 max-h-36 sm:max-h-48 overflow-y-auto pr-1">
-          {rawSamplesData[rowKey].map((sample: any, sIdx: number) => {
+          {sortedSamples.map((sample: any, sIdx: number) => {
             const sampleLimitInfo = getOntarioLimitInfo(sample.parameter_name, sample.result_value, sample.result_unit, sample.exceedance === 'Y' ? 1 : 0, sample.parameter_limit);
             const sampleExceeded = sampleLimitInfo ? sampleLimitInfo.isExceeded : sample.exceedance === 'Y';
             return (
@@ -2012,22 +2027,18 @@ export function SearchPage() {
                         <MapPin className="w-5 h-5 text-blue-600" />
                       </div>
                       <div className="min-w-0">
+                        {/* Line 1: Title / name of the place */}
                         <p className="text-sm sm:text-base font-bold text-gray-900 truncate">{formatSystemName(loc.display_name || titleCase(loc.label || loc.dws_name))}</p>
+                        {/* Line 2: System name */}
                         {loc.owner_name && (
                           <p className="text-xs text-gray-500 truncate mt-0.5">
                             {formatOwnerName(loc.owner_name)}
                           </p>
                         )}
-                        {loc.latest_date && (
-                          <p className="text-[10px] text-gray-500 mt-0.5">
-                            <span className="font-bold text-gray-600 font-sans">Latest Test Date:</span> {formatDateStr(loc.latest_date)}
-                          </p>
-                        )}
-                        {loc.sample_types && loc.sample_types.length > 0 && (
-                          <p className="text-[10px] text-gray-400 truncate mt-0.5">
-                            <span className="font-bold text-gray-500">Water Tested:</span> {formatSampleTypes(loc.sample_types)}
-                          </p>
-                        )}
+                        {/* Line 3: Number of tests and latest test date */}
+                        <p className="text-[10px] text-gray-500 mt-0.5 font-medium">
+                          {loc.totalTests || 0} samples {loc.latest_date && `(Latest: ${formatDateStr(loc.latest_date)})`}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -2159,14 +2170,14 @@ export function SearchPage() {
                       {/* At-a-Glance Summary Card Section */}
                       <div className="space-y-2.5 sm:space-y-3">
                         <h3 className="text-sm sm:text-lg font-bold text-gray-950">Summary</h3>
-                        <div className="border border-gray-200 bg-gray-50/5 rounded-2xl p-3 sm:p-5 shadow-sm">
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+                        <div className="border border-gray-200 bg-gray-50/5 rounded-2xl p-2.5 sm:p-5 shadow-sm">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-5">
                             {/* Card 1: Bacteria & Microbes */}
                             <div
                               onClick={() => setShowMicrobesModal(true)}
-                              className="flex flex-col p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
+                              className="flex flex-col p-2.5 sm:p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
                             >
-                              <div className="flex flex-col flex-grow space-y-2">
+                              <div className="flex flex-col flex-grow space-y-1 sm:space-y-2">
                                 <div className="flex items-center gap-2.5 shrink-0">
                                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0 border border-green-100 shadow-sm group-hover:scale-105 transition-transform duration-200">
                                     <Microscope className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
@@ -2177,7 +2188,7 @@ export function SearchPage() {
                                     </h4>
                                   </div>
                                 </div>
-                                <div className="flex-grow min-h-[40px] sm:min-h-[48px]">
+                                <div className="flex-grow min-h-0 sm:min-h-[48px]">
                                   <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium">
                                     {microbes.length === 0
                                       ? "No microbes tested."
@@ -2188,7 +2199,7 @@ export function SearchPage() {
                                 </div>
                               </div>
 
-                              <div className="flex flex-col justify-end mt-auto pt-2 space-y-3">
+                              <div className="flex flex-col justify-end mt-auto pt-1.5 sm:pt-2 space-y-2 sm:space-y-3">
                                 {/* Safety Bar */}
                                 <div className="space-y-1">
                                   <div className="flex justify-between items-center text-[10px] sm:text-xs">
@@ -2200,7 +2211,7 @@ export function SearchPage() {
                                   <div className="w-full bg-gray-200/60 rounded-full h-1.5 overflow-hidden">
                                     <div
                                       className={cn("h-full rounded-full transition-all duration-500", microbes.length === 0 ? "bg-slate-400" : microbeConfig.color)}
-                                      style={{ width: microbes.length === 0 ? "100%" : microbeConfig.statusText === "Safe" ? "100%" : microbeConfig.statusText === "Warning" ? "50%" : "20%" }}
+                                      style={{ width: microbes.length === 0 ? "0%" : microbeConfig.statusText === "Safe" ? "100%" : microbeConfig.statusText === "Warning" ? "50%" : "20%" }}
                                     />
                                   </div>
                                 </div>
@@ -2215,9 +2226,9 @@ export function SearchPage() {
                             {/* Card 2: Heavy Metals and Pollutants */}
                             <div
                               onClick={() => setShowMetalsModal(true)}
-                              className="flex flex-col p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
+                              className="flex flex-col p-2.5 sm:p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
                             >
-                              <div className="flex flex-col flex-grow space-y-2">
+                              <div className="flex flex-col flex-grow space-y-1 sm:space-y-2">
                                 <div className="flex items-center gap-2.5 shrink-0">
                                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 shadow-sm group-hover:scale-105 transition-transform duration-200">
                                     <FlaskConical className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
@@ -2228,7 +2239,7 @@ export function SearchPage() {
                                     </h4>
                                   </div>
                                 </div>
-                                <div className="flex-grow min-h-[40px] sm:min-h-[48px]">
+                                <div className="flex-grow min-h-0 sm:min-h-[48px]">
                                   <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium">
                                     {chemicals.length === 0 && additives.length === 0
                                       ? "No chemical or additive data available."
@@ -2241,7 +2252,7 @@ export function SearchPage() {
                                 </div>
                               </div>
 
-                              <div className="flex flex-col justify-end mt-auto pt-2 space-y-3">
+                              <div className="flex flex-col justify-end mt-auto pt-1.5 sm:pt-2 space-y-2 sm:space-y-3">
                                 {/* Safety Bar */}
                                 <div className="space-y-1">
                                   <div className="flex justify-between items-center text-[10px] sm:text-xs">
@@ -2253,7 +2264,7 @@ export function SearchPage() {
                                   <div className="w-full bg-gray-200/60 rounded-full h-1.5 overflow-hidden">
                                     <div
                                       className={cn("h-full rounded-full transition-all duration-500", (chemicals.length === 0 && additives.length === 0) ? "bg-slate-400" : chemicalConfig.color)}
-                                      style={{ width: (chemicals.length === 0 && additives.length === 0) ? "100%" : chemicalConfig.statusText === "Safe" ? "100%" : chemicalConfig.statusText === "Warning" ? "50%" : "20%" }}
+                                      style={{ width: (chemicals.length === 0 && additives.length === 0) ? "0%" : chemicalConfig.statusText === "Safe" ? "100%" : chemicalConfig.statusText === "Warning" ? "50%" : "20%" }}
                                     />
                                   </div>
                                 </div>
@@ -2268,13 +2279,13 @@ export function SearchPage() {
                             {/* Card 3: Water Hardness & Softeners */}
                             <div
                               onClick={() => setShowAestheticModal(true)}
-                              className="flex flex-col p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
+                              className="flex flex-col p-2.5 sm:p-3.5 cursor-pointer hover:bg-gray-50/80 active:bg-gray-100/85 rounded-xl border border-transparent hover:border-blue-100 hover:shadow-sm group relative transition-all duration-200 justify-between h-full"
                             >
                               {(() => {
                                 const hasAestheticData = selectedLocation && (selectedLocation.dwsp_data || (hardnessInfo && hardnessInfo.hardness > 0));
                                 return (
                                   <>
-                                    <div className="flex flex-col flex-grow space-y-2">
+                                    <div className="flex flex-col flex-grow space-y-1 sm:space-y-2">
                                       <div className="flex items-center gap-2.5 shrink-0">
                                         <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100 shadow-sm group-hover:scale-105 transition-transform duration-200">
                                           <Waves className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5" />
@@ -2286,7 +2297,7 @@ export function SearchPage() {
                                         </div>
                                       </div>
 
-                                      <div className="flex-grow min-h-[40px] sm:min-h-[48px]">
+                                      <div className="flex-grow min-h-0 sm:min-h-[48px]">
                                         {hasAestheticData ? (
                                           <p className="text-[10px] sm:text-xs text-gray-600 leading-normal font-medium mt-1">
                                             {hardnessInfo.statusText === "Very Hard Water" ? (
@@ -2307,7 +2318,7 @@ export function SearchPage() {
                                       </div>
                                     </div>
 
-                                    <div className="flex flex-col justify-end mt-auto pt-2 space-y-3">
+                                    <div className="flex flex-col justify-end mt-auto pt-1.5 sm:pt-2 space-y-2 sm:space-y-3">
                                       {hasAestheticData ? (
                                         <div className="space-y-1">
                                           <div className="flex justify-between text-[7px] sm:text-[8px] font-bold text-slate-400">
@@ -2471,10 +2482,36 @@ export function SearchPage() {
                                                 </div>
                                                 {isExpandable && (
                                                   <div className="space-y-1.5 pt-1 col-span-2">
-                                                    <div className="flex justify-between items-center">
+                                                    <div className="flex justify-between items-center mb-1">
                                                       <span className="text-[8px] sm:text-[10px] uppercase font-bold text-gray-400 tracking-wider">
                                                         All Samples: {rawSamplesData[rowKey] !== undefined ? rawSamplesData[rowKey].length : "..."}
                                                       </span>
+                                                      {rawSamplesData[rowKey] !== undefined && rawSamplesData[rowKey].length > 0 && (
+                                                        <div className="flex items-center gap-0.5 p-0.5 bg-gray-100 rounded-md border border-gray-200 text-[8px] sm:text-[9px]">
+                                                          <button
+                                                            onClick={() => setSampleSortOrder(prev => ({ ...prev, [rowKey]: 'date' }))}
+                                                            className={cn(
+                                                              "px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer",
+                                                              (sampleSortOrder[rowKey] || 'date') === 'date'
+                                                                ? "bg-white text-blue-700 shadow-sm border border-gray-200/50"
+                                                                : "text-gray-500 hover:text-gray-700 bg-transparent"
+                                                            )}
+                                                          >
+                                                            Date
+                                                          </button>
+                                                          <button
+                                                            onClick={() => setSampleSortOrder(prev => ({ ...prev, [rowKey]: 'highest' }))}
+                                                            className={cn(
+                                                              "px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer",
+                                                              sampleSortOrder[rowKey] === 'highest'
+                                                                ? "bg-white text-blue-700 shadow-sm border border-gray-200/50"
+                                                                : "text-gray-500 hover:text-gray-700 bg-transparent"
+                                                            )}
+                                                          >
+                                                            Highest Found
+                                                          </button>
+                                                        </div>
+                                                      )}
                                                     </div>
 
                                                     {renderSampleHistory(rowKey, test, precision)}

@@ -953,6 +953,10 @@ const getHardnessInfo = (tests: WaterTest[], dwspData?: any) => {
   return { hardness, pct, statusText, textColor, userTip, feelsLike, practicalAdvice };
 }
 
+// Global in-memory cache to persist query results and location test data across unmounts/mounts
+const searchResultsCache: Record<string, any[]> = {};
+const locationTestsCache: Record<string, any> = {};
+
 export function SearchPage() {
   const navigate = useNavigate();
   const { query: routeQuery, dwsId: routeDwsId } = useParams();
@@ -1426,15 +1430,26 @@ export function SearchPage() {
           existing.exceedanceCount = (existing.exceedanceCount || 0) + (t.exceedanceCount || 0);
         }
       });
-      setWaterTests(Array.from(testsMap.values()));
+      const waterTestsList = Array.from(testsMap.values());
 
       // De-duplicate exceedances
       const uniqueExceedances = Array.from(new Map((data.exceedances || []).map((e: any) => [
         `${e.parameter_name.toLowerCase().trim()}_${e.sample_date}_${e.result_value}`,
         e
       ])).values());
-      setExceedances(uniqueExceedances);
 
+      // Cache the loaded data
+      if (data.location && data.location.dws_id) {
+        const locCacheKey = `${data.location.dws_id}_${year}`;
+        locationTestsCache[locCacheKey] = {
+          waterTests: waterTestsList,
+          exceedances: uniqueExceedances,
+          location: data.location
+        };
+      }
+
+      setWaterTests(waterTestsList);
+      setExceedances(uniqueExceedances);
       setSelectedLocation(data.location);
     } catch (error) {
       console.error("Fetch tests error:", error);
@@ -1445,91 +1460,136 @@ export function SearchPage() {
     }
   };
 
+  // 1. Fetch matching locations list (only when query, year, or searchParams change)
   useEffect(() => {
-    const syncUrlState = async () => {
+    const fetchLocationsList = async () => {
       const qParam = searchParams.get("q");
       const effectiveQuery = routeQuery || qParam;
+      
       if (effectiveQuery) {
         setSearchTerm(effectiveQuery);
       }
+      
       if (effectiveQuery && effectiveQuery.length >= 2) {
         setHasSearched(true);
-        setLoading(true);
-        if (!routeDwsId) {
-          setSelectedLocation(null);
+        
+        // Check if matching locations list is cached
+        const cacheKey = `${effectiveQuery.toLowerCase().trim()}_${selectedYear}`;
+        if (searchResultsCache[cacheKey]) {
+          setResults(searchResultsCache[cacheKey]);
+          return;
         }
+        
+        setLoading(true);
         try {
           const res = await fetch(`/api/water-data?distinct_locations=true&q=${encodeURIComponent(effectiveQuery)}&year=${selectedYear}`);
           if (res.ok) {
             const data = await res.json();
+            searchResultsCache[cacheKey] = data || [];
             setResults(data || []);
-
-            if (routeDwsId) {
-              const dwsIdNum = parseInt(routeDwsId, 10);
-              if (!isNaN(dwsIdNum)) {
-                const matched = (data || []).find((item: any) => item.dws_id === dwsIdNum);
-                const locName = matched ? matched.dws_name : null;
-                if (locName) {
-                  await fetchWaterData(locName, selectedYear);
-                } else {
-                  setDataLoading(true);
-                  const testRes = await fetch(`/api/locations/${dwsIdNum}/tests?year=${selectedYear}`);
-                  if (testRes.ok) {
-                    const testData = await testRes.json();
-
-                    // De-duplicate tests
-                    const testsMap = new Map<string, WaterTest>();
-                    (testData.tests || []).forEach(t => {
-                      const key = `${t.contaminant.toLowerCase().trim()}_${(t.unit || "").toLowerCase().trim()}`;
-                      if (!testsMap.has(key)) {
-                        testsMap.set(key, t);
-                      } else {
-                        const existing = testsMap.get(key)!;
-                        existing.sampleCount += t.sampleCount;
-                        if (t.latestYear > existing.latestYear) {
-                          existing.latestYear = t.latestYear;
-                        }
-                        if (t.level !== null && (existing.level === null || t.level > existing.level)) {
-                          existing.level = t.level;
-                        }
-                        if (t.maxLevel !== undefined && t.maxLevel !== null && (existing.maxLevel === undefined || existing.maxLevel === null || t.maxLevel > existing.maxLevel)) {
-                          existing.maxLevel = t.maxLevel;
-                        }
-                        existing.exceedanceCount = (existing.exceedanceCount || 0) + (t.exceedanceCount || 0);
-                      }
-                    });
-                    setWaterTests(Array.from(testsMap.values()));
-
-                    // De-duplicate exceedances
-                    const uniqueExceedances = Array.from(new Map<string, Exceedance>((testData.exceedances || []).map((e: any) => [
-                      `${e.parameter_name.toLowerCase().trim()}_${e.sample_date}_${e.result_value}`,
-                      e
-                    ])).values());
-                    setExceedances(uniqueExceedances);
-
-                    setSelectedLocation(testData.location);
-                  }
-                  setDataLoading(false);
-                }
-              }
-            } else {
-              setSelectedLocation(null);
-            }
           }
         } catch (error) {
-          console.error("URL sync error:", error);
+          console.error("Fetch locations list error:", error);
         } finally {
           setLoading(false);
         }
       } else {
         setResults([]);
         setHasSearched(false);
-        setSelectedLocation(null);
       }
     };
 
-    syncUrlState();
-  }, [routeQuery, routeDwsId, selectedYear, searchParams]);
+    fetchLocationsList();
+  }, [routeQuery, selectedYear, searchParams]);
+
+  // 2. Fetch specific location details (runs when routeDwsId, results, or selectedYear changes)
+  useEffect(() => {
+    const fetchSelectedLocationDetails = async () => {
+      if (!routeDwsId) {
+        setSelectedLocation(null);
+        return;
+      }
+
+      const dwsIdNum = parseInt(routeDwsId, 10);
+      if (isNaN(dwsIdNum)) {
+        setSelectedLocation(null);
+        return;
+      }
+
+      // Check if location details are cached
+      const locCacheKey = `${dwsIdNum}_${selectedYear}`;
+      if (locationTestsCache[locCacheKey]) {
+        const cachedData = locationTestsCache[locCacheKey];
+        setWaterTests(cachedData.waterTests);
+        setExceedances(cachedData.exceedances);
+        setSelectedLocation(cachedData.location);
+        return;
+      }
+
+      // Try to find the location name in current results first to fetch using fetchWaterData
+      const matched = results.find((item: any) => item.dws_id === dwsIdNum);
+      const locName = matched ? matched.dws_name : null;
+
+      if (locName) {
+        await fetchWaterData(locName, selectedYear);
+      } else {
+        // Fallback: fetch directly from API
+        setDataLoading(true);
+        try {
+          const testRes = await fetch(`/api/locations/${dwsIdNum}/tests?year=${selectedYear}`);
+          if (testRes.ok) {
+            const testData = await testRes.json();
+
+            // De-duplicate tests
+            const testsMap = new Map<string, WaterTest>();
+            (testData.tests || []).forEach(t => {
+              const key = `${t.contaminant.toLowerCase().trim()}_${(t.unit || "").toLowerCase().trim()}`;
+              if (!testsMap.has(key)) {
+                testsMap.set(key, t);
+              } else {
+                const existing = testsMap.get(key)!;
+                existing.sampleCount += t.sampleCount;
+                if (t.latestYear > existing.latestYear) {
+                  existing.latestYear = t.latestYear;
+                }
+                if (t.level !== null && (existing.level === null || t.level > existing.level)) {
+                  existing.level = t.level;
+                }
+                if (t.maxLevel !== undefined && t.maxLevel !== null && (existing.maxLevel === undefined || existing.maxLevel === null || t.maxLevel > existing.maxLevel)) {
+                  existing.maxLevel = t.maxLevel;
+                }
+                existing.exceedanceCount = (existing.exceedanceCount || 0) + (t.exceedanceCount || 0);
+              }
+            });
+            const waterTestsList = Array.from(testsMap.values());
+
+            // De-duplicate exceedances
+            const uniqueExceedances = Array.from(new Map<string, Exceedance>((testData.exceedances || []).map((e: any) => [
+              `${e.parameter_name.toLowerCase().trim()}_${e.sample_date}_${e.result_value}`,
+              e
+            ])).values());
+
+            // Cache it!
+            locationTestsCache[locCacheKey] = {
+              waterTests: waterTestsList,
+              exceedances: uniqueExceedances,
+              location: testData.location
+            };
+
+            setWaterTests(waterTestsList);
+            setExceedances(uniqueExceedances);
+            setSelectedLocation(testData.location);
+          }
+        } catch (error) {
+          console.error("Fetch tests error:", error);
+        } finally {
+          setDataLoading(false);
+        }
+      }
+    };
+
+    fetchSelectedLocationDetails();
+  }, [routeDwsId, results, selectedYear]);
 
   // Frontend filtering logic
   const filteredResults = results.filter((loc) => {
@@ -1906,7 +1966,7 @@ export function SearchPage() {
 
       {/* Results List */}
       <AnimatePresence mode="wait">
-        {loading ? (
+        {loading && (
           <motion.div
             key="search-loading"
             initial={{ opacity: 0, y: 10 }}
@@ -1918,13 +1978,15 @@ export function SearchPage() {
             <span className="text-base font-bold text-gray-800 font-sans">Searching locations...</span>
             <span className="text-xs text-gray-400 font-sans">Finding water systems matching "{searchTerm}"</span>
           </motion.div>
-        ) : showResultsList ? (
+        )}
+
+        {!loading && hasSearched && (
           <motion.div
             key="results"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="max-w-2xl mx-auto space-y-2"
+            className={cn("max-w-2xl mx-auto space-y-2", (!showResultsList || loading) && "hidden")}
           >
             {filteredResults.length === 0 ? (
               <div className="text-center py-10 text-gray-400">
@@ -1990,7 +2052,7 @@ export function SearchPage() {
               </>
             ) : null}
           </motion.div>
-        ) : null}
+        )}
 
         {/* Detail View with Tabs */}
         {showDetailView && !loading && (
